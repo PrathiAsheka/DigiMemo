@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --foreground: #1c1c1a;
+  --muted: #6b6b66;
+  --border: #e4e3de;
+  --accent: #2f6f5e;
+  --accent-fg: #ffffff;
+  --warn: #a15c07;
+  --danger: #b42318;
+  --ok: #2f6f5e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #121211;
+    --surface: #1b1b19;
+    --foreground: #ecebe6;
+    --muted: #a09f98;
+    --border: #2e2e2b;
+    --accent: #5fb39b;
+    --accent-fg: #0d1f1a;
+    --warn: #e0a24a;
+    --danger: #f07c70;
+    --ok: #5fb39b;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-border bg-surface p-5;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-fg transition-opacity hover:opacity-90 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium hover:bg-background disabled:opacity-50;
+  }
+  .btn-link {
+    @apply text-sm font-medium text-accent hover:underline;
+  }
+  .btn-danger {
+    @apply text-sm font-medium text-danger hover:underline;
+  }
+  .input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent;
+  }
+  .field-label {
+    @apply mb-1 block text-xs font-medium text-muted;
+  }
+  .h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  .h2 {
+    @apply text-base font-semibold;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium;
+  }
+  .table {
+    @apply w-full text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-border pb-2 text-xs font-medium text-muted;
+  }
+  .table td {
+    @apply border-b border-border py-2.5 align-top;
+  }
+  .table tr:last-child td {
+    @apply border-b-0;
+  }
 }

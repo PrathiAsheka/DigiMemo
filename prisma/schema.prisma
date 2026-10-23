@@ -1,0 +1,214 @@
+// Home Digital Twin — core data model (proposal §14).
+// SQLite for local development; switch `provider` to "postgresql" for production.
+// Enum-like fields are strings; allowed values live in src/lib/constants.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  properties Property[]
+  providers  ServiceProvider[]
+}
+
+model Property {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  type      String   @default("house") // house | apartment | condo | townhouse | commercial | other
+  address   String?
+  yearBuilt Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  spaces      Space[]
+  assets      Asset[]
+  documents   Document[]
+  tasks       MaintenanceTask[]
+  workOrders  WorkOrder[]
+  costRecords CostRecord[]
+
+  @@index([ownerId])
+}
+
+// Building, floor, room or area. Nested via parentId (e.g. Floor 1 → Kitchen).
+model Space {
+  id         String   @id @default(cuid())
+  propertyId String
+  parentId   String?
+  name       String
+  kind       String   @default("room") // building | floor | room | area | exterior
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  parent   Space?   @relation("SpaceTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Space[]  @relation("SpaceTree")
+  assets   Asset[]
+
+  @@index([propertyId])
+}
+
+model Asset {
+  id                String    @id @default(cuid())
+  propertyId        String
+  spaceId           String?
+  name              String
+  category          String    @default("appliance") // appliance | hvac | plumbing | electrical | solar | water | security | structure | outdoor | other
+  manufacturer      String?
+  model             String?
+  serialNumber      String?
+  purchaseDate      DateTime?
+  installDate       DateTime?
+  purchasePrice     Float?
+  expectedLifeYears Int?
+  status            String    @default("active") // active | needs_attention | out_of_service | retired
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  property    Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  space       Space?            @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  warranties  Warranty[]
+  documents   Document[]
+  tasks       MaintenanceTask[]
+  workOrders  WorkOrder[]
+  costRecords CostRecord[]
+
+  @@index([propertyId])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  propertyId  String
+  assetId     String?
+  workOrderId String?
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  storageKey  String   @unique // path under UPLOAD_DIR
+  kind        String   @default("other") // receipt | invoice | warranty | manual | contract | certificate | photo | other
+  // AI extraction lifecycle: none | pending | ready | confirmed | failed
+  extractionStatus String  @default("none")
+  extraction       String? // JSON: see src/lib/ai/extract.ts ExtractionSchema
+  extractionError  String?
+  createdAt        DateTime @default(now())
+
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  asset      Asset?     @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  workOrder  WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  warranties Warranty[]
+
+  @@index([propertyId])
+  @@index([assetId])
+}
+
+model Warranty {
+  id         String    @id @default(cuid())
+  assetId    String
+  documentId String?
+  provider   String?
+  startDate  DateTime?
+  endDate    DateTime
+  terms      String?
+  createdAt  DateTime  @default(now())
+
+  asset    Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([assetId])
+}
+
+// A recurring or one-off scheduled task. Completing it rolls nextDueDate forward.
+model MaintenanceTask {
+  id              String    @id @default(cuid())
+  propertyId      String
+  assetId         String?
+  title           String
+  description     String?
+  intervalDays    Int? // null = one-off
+  nextDueDate     DateTime
+  lastCompletedAt DateTime?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  property   Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  asset      Asset?      @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  workOrders WorkOrder[]
+
+  @@index([propertyId, nextDueDate])
+}
+
+model WorkOrder {
+  id           String    @id @default(cuid())
+  propertyId   String
+  assetId      String?
+  taskId       String?
+  providerId   String?
+  title        String
+  description  String?
+  status       String    @default("open") // open | scheduled | in_progress | completed | cancelled
+  priority     String    @default("normal") // low | normal | high | urgent
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  resolution   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  property    Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  asset       Asset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  task        MaintenanceTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  provider    ServiceProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  costRecords CostRecord[]
+  documents   Document[]
+
+  @@index([propertyId, status])
+}
+
+// The user's own address book of technicians (the marketplace comes later).
+model ServiceProvider {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  category  String?
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  owner      User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  workOrders WorkOrder[]
+
+  @@index([ownerId])
+}
+
+model CostRecord {
+  id          String   @id @default(cuid())
+  propertyId  String
+  assetId     String?
+  workOrderId String?
+  amount      Float
+  currency    String   @default("USD")
+  date        DateTime
+  category    String   @default("repair") // purchase | service | repair | replacement | other
+  description String?
+  createdAt   DateTime @default(now())
+
+  property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  asset     Asset?     @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId, date])
+}

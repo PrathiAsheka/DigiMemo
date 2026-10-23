@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Home Digital Twin
 
-## Getting Started
+Property intelligence and maintenance platform: the Phase 1 MVP from the business proposal (§8).
+Every property gets a structured digital record covering its spaces, assets, documents, warranties, maintenance and costs, plus an AI assistant on top.
 
-First, run the development server:
+## What's in the MVP
+
+| Proposal scope | Where |
+| --- | --- |
+| Accounts and property creation | `/signup`, `/login`, `/properties/new` (starts you with typical rooms) |
+| Rooms/areas and asset inventory | Property → Overview, nested spaces, asset pages |
+| Asset profile: model, serial, purchase, warranty, service history | `/properties/[id]/assets/[assetId]` (age, expected-life and spend summary) |
+| Document upload + AI extraction | Property → Documents. Upload a receipt, invoice, warranty card or label photo; Claude proposes asset, warranty, cost, service and maintenance data with per-field confidence; nothing is saved until you confirm |
+| Maintenance schedules, reminders, work orders | Property → Maintenance (recurring tasks roll forward on completion and record a service entry and cost) and Work orders |
+| AI chat over your own data | `/assistant`, grounded in the property record, with safety rules for electrical, gas and structural systems |
+| Dashboard | `/dashboard`: overdue, next 30 days, warranties ending, replacement age, upkeep spend |
+
+Out of scope for now, per the proposal: 3D, IoT, the technician marketplace and payments, and multi-property enterprise features. Reminders are shown in the app only; email and push notifications are not built yet.
+
+## Stack
+
+- Next.js 16 (App Router, Server Actions) with TypeScript and Tailwind CSS v4. Cache Components is turned off because every page is behind a login.
+- Prisma 6 with SQLite for local development. Switch `provider` in `prisma/schema.prisma` to `postgresql` for production.
+- Claude API (`@anthropic-ai/sdk`, model `claude-opus-5-5`) for document extraction (structured outputs) and the assistant (streaming, prompt caching). Server-side refusal fallbacks are enabled.
+- Uploaded files are stored on local disk under `UPLOAD_DIR` and served only to their owner through `/api/documents/[id]`. Swap `src/lib/storage.ts` for S3 or GCS later.
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env    # then set SESSION_SECRET and ANTHROPIC_API_KEY
+npx prisma migrate dev
+npm run db:seed         # optional demo account and sample house (see prisma/seed.ts)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Without `ANTHROPIC_API_KEY` everything works except AI extraction and the assistant, and the app says so where those features would appear.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Layout
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+prisma/schema.prisma          data model (proposal §14)
+prisma/seed.ts                demo data
+src/lib/                      db, session/auth (data access layer), storage, formatting
+src/lib/ai/                   Claude client, document extraction, assistant
+src/app/(auth)/               signup / login
+src/app/(app)/                signed-in app: dashboard, properties, assistant, providers
+src/app/(app)/properties/*actions.ts   server actions (each re-checks ownership)
+src/app/api/                  document file serving, extraction, assistant stream
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`npm run dev` · `npm run build` · `npm run lint` · `npm run typecheck` · `npm run db:migrate` · `npm run db:seed`
