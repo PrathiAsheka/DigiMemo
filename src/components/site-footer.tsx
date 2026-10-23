@@ -4,7 +4,7 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted">
-        <span>© {new Date().getFullYear()} Home Digital Twin</span>
+        <span>© {new Date().getFullYear()} DigiMemo</span>
         <nav className="flex flex-wrap gap-4">
           {signedIn ? (
             <>

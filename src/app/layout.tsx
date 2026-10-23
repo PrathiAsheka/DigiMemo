@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home Digital Twin",
+  title: "DigiMemo",
   description: "Know your property. Maintain it before it breaks. Manage it from one place.",
 };
 

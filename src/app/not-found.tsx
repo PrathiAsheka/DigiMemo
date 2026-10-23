@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Page not found · Home Digital Twin" };
+export const metadata = { title: "Page not found · DigiMemo" };
 
 export default function NotFound() {
   return (

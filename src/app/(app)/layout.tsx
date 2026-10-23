@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
               <path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor" opacity="0.9" />
             </svg>
-            Home Digital Twin
+            DigiMemo
           </Link>
           <NavLinks propertiesLabel={profile.navLabel} />
           <div className="ml-auto flex items-center gap-3 text-sm">

@@ -44,7 +44,7 @@ export default async function Home() {
               <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
                 <path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor" />
               </svg>
-              Home Digital Twin
+              DigiMemo
             </span>
             <div className="flex items-center gap-3 text-sm">
               <Link href="/login" className="rounded-lg px-3 py-2 font-medium hover:bg-white/10">Sign in</Link>

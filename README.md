@@ -1,4 +1,4 @@
-# Home Digital Twin
+# DigiMemo
 
 A property intelligence and maintenance platform for homes, apartments and businesses. Every property gets a structured digital record of its rooms, equipment, documents, warranties, maintenance, work orders and costs, plus alerts that warn you before something is due, expires or wears out.
 

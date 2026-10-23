@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative z-10 p-6 lg:p-10">
           <Link href="/" className="flex w-fit items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-90">
             <Logo />
-            Home Digital Twin
+            DigiMemo
           </Link>
           <h2 className="mt-6 max-w-md text-2xl font-semibold leading-tight tracking-tight lg:text-4xl">
             Know your property. Maintain it before it breaks.

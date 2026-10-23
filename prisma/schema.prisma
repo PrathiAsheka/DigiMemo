@@ -1,4 +1,4 @@
-// Home Digital Twin — core data model (proposal §14).
+// DigiMemo — core data model (proposal §14).
 // SQLite for local development; switch `provider` to "postgresql" for production.
 // Enum-like fields are strings; allowed values live in src/lib/constants.ts.
 

@@ -4,7 +4,7 @@ import { allProfiles } from "@/lib/profiles";
 import { PlacePhoto } from "@/components/photos";
 import { chooseUseCase } from "./actions";
 
-export const metadata = { title: "Welcome · Home Digital Twin" };
+export const metadata = { title: "Welcome · DigiMemo" };
 
 export default async function WelcomePage() {
   const user = await requireUser();

@@ -6,7 +6,7 @@ import { getProfile } from "@/lib/profiles";
 import { PageHeader } from "@/components/ui";
 import { DeleteAccountForm, PasswordForm, ProfileForm } from "./forms";
 
-export const metadata = { title: "Account · Home Digital Twin" };
+export const metadata = { title: "Account · DigiMemo" };
 
 export default async function AccountPage() {
   const user = await requireUser();
