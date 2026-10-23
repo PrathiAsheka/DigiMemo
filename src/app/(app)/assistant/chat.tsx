@@ -4,22 +4,18 @@ import { useEffect, useRef, useState } from "react";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-const SUGGESTIONS = [
-  "Which appliances are still under warranty?",
-  "What maintenance is due this month?",
-  "How much did I spend on repairs this year?",
-  "Who serviced my AC last time?",
-  "Which assets are approaching replacement age?",
-];
-
 export function Chat({
   properties,
   initialPropertyId,
   initialQuestion,
+  suggestions,
+  placeholder,
 }: {
   properties: { id: string; name: string }[];
   initialPropertyId: string | null;
   initialQuestion?: string;
+  suggestions: string[];
+  placeholder: string;
 }) {
   const [propertyId, setPropertyId] = useState<string>(initialPropertyId ?? "all");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -99,7 +95,7 @@ export function Chat({
       <div className="flex-1 space-y-4 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex flex-wrap gap-2 pt-4">
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button key={s} className="btn-secondary text-left" onClick={() => send(s)}>{s}</button>
             ))}
           </div>
@@ -130,7 +126,7 @@ export function Chat({
           className="input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your property…"
+          placeholder={placeholder}
           aria-label="Message"
         />
         <button className="btn" disabled={busy || !input.trim()}>{busy ? "…" : "Send"}</button>

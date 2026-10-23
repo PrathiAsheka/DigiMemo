@@ -56,7 +56,7 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
                       <Hidden name="workOrderId" value={o.id} />
                       <Field label="Status" name="status" id={`status-${o.id}`}><Select name="status" id={`status-${o.id}`} options={WORK_ORDER_STATUSES} defaultValue={o.status} /></Field>
                       <Field label="Priority" name="priority" id={`priority-${o.id}`}><Select name="priority" id={`priority-${o.id}`} options={WORK_ORDER_PRIORITIES} defaultValue={o.priority} /></Field>
-                      <Field label="Provider" name="providerId" id={`providerId-${o.id}`}><Select name="providerId" id={`providerId-${o.id}`} emptyLabel="— Unassigned" options={providerOptions} defaultValue={o.providerId} /></Field>
+                      <Field label="Provider" name="providerId" id={`providerId-${o.id}`}><Select name="providerId" id={`providerId-${o.id}`} emptyLabel="— Unassigned" options={providerOptions} defaultValue={o.providerId} otherPlaceholder="New provider name" /></Field>
                       <Field label="Scheduled for" name="scheduledFor" id={`scheduledFor-${o.id}`}><Input name="scheduledFor" id={`scheduledFor-${o.id}`} type="date" defaultValue={toDateInput(o.scheduledFor)} /></Field>
                       <Field label="Cost to add (USD)" name="cost" id={`cost-${o.id}`}><Input name="cost" id={`cost-${o.id}`} type="number" step="0.01" min={0} /></Field>
                       <Field label="Resolution notes" name="resolution" id={`resolution-${o.id}`}><Input name="resolution" id={`resolution-${o.id}`} defaultValue={o.resolution ?? ""} /></Field>
@@ -110,13 +110,13 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
           <Hidden name="propertyId" value={property.id} />
           <Field label="What needs doing" name="title"><Input name="title" required placeholder="e.g. Dishwasher not draining" /></Field>
           <Field label="Asset" name="assetId">
-            <Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} defaultValue={typeof presetAsset === "string" ? presetAsset : undefined} />
+            <Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} defaultValue={typeof presetAsset === "string" ? presetAsset : undefined} otherPlaceholder="New equipment name" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Priority" name="priority"><Select name="priority" options={WORK_ORDER_PRIORITIES} defaultValue="normal" /></Field>
             <Field label="Scheduled for" name="scheduledFor"><Input name="scheduledFor" type="date" /></Field>
           </div>
-          <Field label="Provider" name="providerId"><Select name="providerId" emptyLabel="— Unassigned" options={providerOptions} /></Field>
+          <Field label="Provider" name="providerId"><Select name="providerId" emptyLabel="— Unassigned" options={providerOptions} otherPlaceholder="New provider name" /></Field>
           <Field label="Details" name="description"><TextArea name="description" rows={2} /></Field>
           <button className="btn w-full">Create work order</button>
         </form>

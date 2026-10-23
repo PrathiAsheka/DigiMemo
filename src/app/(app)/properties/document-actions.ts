@@ -11,6 +11,7 @@ import { addDays, startOfDayUTC } from "@/lib/format";
 import { deleteStoredFile, saveFile } from "@/lib/storage";
 import { canExtract } from "@/lib/ai/extract";
 import { aiConfigured } from "@/lib/ai/client";
+import { resolveAssetId, resolveSpaceId } from "@/lib/form-entities";
 
 export type UploadState = { error?: string } | undefined;
 
@@ -24,8 +25,7 @@ export async function uploadDocument(_prev: UploadState, form: FormData): Promis
   if (file.size > MAX_UPLOAD_BYTES) return { error: "Files must be 15 MB or smaller" };
   if (!ACCEPTED_TYPES.includes(file.type)) return { error: "Upload a PDF, image (JPEG, PNG, WebP, GIF) or text file" };
 
-  const assetId = str(form, "assetId");
-  if (assetId && !(await db.asset.count({ where: { id: assetId, propertyId } }))) return { error: "Unknown asset" };
+  const assetId = await resolveAssetId(form, "assetId", propertyId);
 
   const analyse = form.get("analyse") === "on" && canExtract(file.type) && aiConfigured();
   const storageKey = await saveFile(propertyId, file.name, Buffer.from(await file.arrayBuffer()));
@@ -58,10 +58,7 @@ export async function linkDocument(form: FormData) {
   const user = await requireUser();
   const doc = await findOwnedDocument(user.id, required(form, "documentId"));
   if (!doc) throw new Error("Document not found");
-  const assetId = str(form, "assetId");
-  if (assetId && !(await db.asset.count({ where: { id: assetId, propertyId: doc.propertyId } }))) {
-    throw new Error("Unknown asset");
-  }
+  const assetId = await resolveAssetId(form, "assetId", doc.propertyId);
   await db.document.update({
     where: { id: doc.id },
     data: { assetId, kind: oneOf(form, "kind", DOCUMENT_KINDS, doc.kind as (typeof DOCUMENT_KINDS)[number]) },
@@ -80,8 +77,7 @@ export async function confirmExtraction(form: FormData) {
   const propertyId = doc.propertyId;
 
   const target = required(form, "target");
-  const spaceId = str(form, "spaceId");
-  const validSpace = spaceId && (await db.space.count({ where: { id: spaceId, propertyId } })) ? spaceId : null;
+  const validSpace = await resolveSpaceId(form, "spaceId", propertyId);
   const purchaseDate = date(form, "purchaseDate");
   const purchasePrice = float(form, "purchasePrice");
 

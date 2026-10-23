@@ -29,12 +29,12 @@ export function NewTaskForm({ propertyId, assets, assetId }: { propertyId: strin
       </Field>
       {assets && (
         <Field label="Asset" name="assetId">
-          <Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} />
+          <Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} otherPlaceholder="New equipment name" />
         </Field>
       )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Repeats" name="intervalDays">
-          <Select name="intervalDays" options={INTERVALS} defaultValue="" />
+          <Select name="intervalDays" options={INTERVALS} defaultValue="" otherLabel="Other interval…" otherType="number" otherPlaceholder="Repeat every … days" />
         </Field>
         <Field label="Next due" name="nextDueDate">
           <Input name="nextDueDate" type="date" required defaultValue={toDateInput(new Date())} />
@@ -89,7 +89,7 @@ export function TaskRow({
                 id={`providerId-${task.id}`}
                 emptyLabel="Myself"
                 options={providers.map((p) => ({ value: p.id, label: p.name }))}
-              />
+              otherPlaceholder="Who did it?" />
             </Field>
             <Field label="Notes" name="notes" id={`notes-${task.id}`}>
               <Input name="notes" id={`notes-${task.id}`} />

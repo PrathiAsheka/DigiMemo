@@ -101,7 +101,11 @@ export async function buildPropertyContext(userId: string, propertyId: string | 
   return lines.join("\n");
 }
 
-export function streamAssistantReply(context: string, messages: Anthropic.Beta.BetaMessageParam[]) {
+export function streamAssistantReply(
+  context: string,
+  audience: string,
+  messages: Anthropic.Beta.BetaMessageParam[],
+) {
   const today = new Date().toISOString().slice(0, 10);
   return anthropic.beta.messages.stream({
     ...FALLBACK,
@@ -110,6 +114,7 @@ export function streamAssistantReply(context: string, messages: Anthropic.Beta.B
     output_config: { effort: "low" },
     system: [
       { type: "text", text: INSTRUCTIONS },
+      { type: "text", text: `About the user: ${audience}` },
       // Cached per conversation: the record changes rarely between turns.
       { type: "text", text: `# Property record\n\n${context}`, cache_control: { type: "ephemeral" } },
       { type: "text", text: `Today's date: ${today}` },

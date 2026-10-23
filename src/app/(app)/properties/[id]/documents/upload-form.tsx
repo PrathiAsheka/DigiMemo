@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { DOCUMENT_KINDS, label } from "@/lib/constants";
+import { DOCUMENT_KINDS } from "@/lib/constants";
+import { Select } from "@/components/select";
 import { uploadDocument, type UploadState } from "../../document-actions";
 
 export function UploadForm({
@@ -31,20 +32,23 @@ export function UploadForm({
       />
       <div>
         <label className="field-label" htmlFor="kind">Type</label>
-        <select id="kind" name="kind" className="input" defaultValue="other">
-          {DOCUMENT_KINDS.map((k) => (
-            <option key={k} value={k}>{k === "other" ? "Let AI decide / other" : label(k)}</option>
-          ))}
-        </select>
+        <Select
+          name="kind"
+          options={DOCUMENT_KINDS}
+          emptyLabel={aiEnabled ? "Let AI decide" : "— Not sure"}
+          defaultValue=""
+          otherPlaceholder="e.g. Inspection report"
+        />
       </div>
       <div>
         <label className="field-label" htmlFor="assetId">Asset</label>
-        <select id="assetId" name="assetId" className="input" defaultValue={presetAssetId ?? ""}>
-          <option value="">— Not linked yet</option>
-          {assets.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+        <Select
+          name="assetId"
+          emptyLabel="— Not linked yet"
+          options={assets.map((a) => ({ value: a.id, label: a.name }))}
+          defaultValue={presetAssetId ?? ""}
+          otherPlaceholder="New equipment name"
+        />
       </div>
       {aiEnabled ? (
         <label className="flex items-center gap-2 text-sm">

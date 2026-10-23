@@ -1,44 +1,103 @@
 @import "tailwindcss";
 
+/* Emerald green theme. Brand greens carry the header and primary actions; urgency colours stay
+   red/amber so they still stand out against the green. */
 :root {
-  --background: #f7f7f5;
+  --background: #f2f8f6;
   --surface: #ffffff;
-  --foreground: #1c1c1a;
-  --muted: #6b6b66;
-  --border: #e4e3de;
-  --accent: #2f6f5e;
+  --surface-2: #e3f4ee;
+  --foreground: #0f241e;
+  --muted: #55706a;
+  --border: #cfe6de;
+  --accent: #059669;
+  --accent-strong: #047857;
   --accent-fg: #ffffff;
-  --warn: #a15c07;
+  --header: #064e3b;
+  --header-fg: #ecfdf5;
+  --header-muted: #8fd3bb;
+  --warn: #a35a00;
+  --warn-bg: #fff6e6;
   --danger: #b42318;
-  --ok: #2f6f5e;
+  --danger-bg: #fdeeec;
+  --ok: #047857;
+  --ok-bg: #d1fae5;
+
+  /* Illustration palette */
+  --ill-sky: #e0f4ec;
+  --ill-sun: #f4d27a;
+  --ill-cloud: #ffffff;
+  --ill-ground: #6ccfa5;
+  --ill-ground-2: #a7e3c9;
+  --ill-wall: #fbfaf5;
+  --ill-wall-2: #d8efe6;
+  --ill-roof: #059669;
+  --ill-window: #cfe9f1;
+  --ill-frame: #065f46;
+  --ill-door: #047857;
+  --ill-tree: #10a36f;
+  --ill-tree-2: #34c08a;
+  --ill-trunk: #7a5a3a;
+  --ill-glass: #94dcc0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #121211;
-    --surface: #1b1b19;
-    --foreground: #ecebe6;
-    --muted: #a09f98;
-    --border: #2e2e2b;
-    --accent: #5fb39b;
-    --accent-fg: #0d1f1a;
-    --warn: #e0a24a;
-    --danger: #f07c70;
-    --ok: #5fb39b;
+    --background: #08150f;
+    --surface: #0f1f19;
+    --surface-2: #12302a;
+    --foreground: #e1f3ec;
+    --muted: #8fb0a4;
+    --border: #1d3a31;
+    --accent: #34d399;
+    --accent-strong: #6ee7b7;
+    --accent-fg: #022c22;
+    --header: #022c22;
+    --header-fg: #e1f3ec;
+    --header-muted: #6fc3a5;
+    --warn: #f0b04f;
+    --warn-bg: #2a1f0c;
+    --danger: #f27b6f;
+    --danger-bg: #2c1412;
+    --ok: #34d399;
+    --ok-bg: #0b3528;
+
+    --ill-sky: #0e2a22;
+    --ill-sun: #e8c76a;
+    --ill-cloud: #24402f;
+    --ill-ground: #0f5c45;
+    --ill-ground-2: #0c4a38;
+    --ill-wall: #d9e6dd;
+    --ill-wall-2: #a9c4b3;
+    --ill-roof: #34d399;
+    --ill-window: #f3d98b;
+    --ill-frame: #04241b;
+    --ill-door: #047857;
+    --ill-tree: #10a36f;
+    --ill-tree-2: #0b8a5c;
+    --ill-trunk: #5e4630;
+    --ill-glass: #2f7d66;
   }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-fg: var(--accent-fg);
+  --color-header: var(--header);
+  --color-header-fg: var(--header-fg);
+  --color-header-muted: var(--header-muted);
   --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
   --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
   --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -50,13 +109,13 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-xl border border-border bg-surface p-5;
+    @apply rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(15,61,39,0.05)];
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-fg transition-opacity hover:opacity-90 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-strong disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium hover:bg-background disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium hover:border-accent hover:text-accent disabled:opacity-50;
   }
   .btn-link {
     @apply text-sm font-medium text-accent hover:underline;
@@ -65,7 +124,7 @@ body {
     @apply text-sm font-medium text-danger hover:underline;
   }
   .input {
-    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent;
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
   .field-label {
     @apply mb-1 block text-xs font-medium text-muted;
@@ -77,7 +136,7 @@ body {
     @apply text-base font-semibold;
   }
   .badge {
-    @apply inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-2 py-0.5 text-xs font-medium;
   }
   .table {
     @apply w-full text-left text-sm;

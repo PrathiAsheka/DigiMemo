@@ -92,7 +92,7 @@ export default async function CostsPage({ params }: PageProps<"/properties/[id]/
               <Field label="Amount (USD)" name="amount"><Input name="amount" type="number" step="0.01" min={0} required /></Field>
             </div>
             <Field label="Category" name="category"><Select name="category" options={COST_CATEGORIES} defaultValue="repair" /></Field>
-            <Field label="Asset" name="assetId"><Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} /></Field>
+            <Field label="Asset" name="assetId"><Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} otherPlaceholder="New equipment name" /></Field>
             <Field label="Description" name="description"><Input name="description" /></Field>
             <button className="btn w-full">Add cost</button>
           </form>

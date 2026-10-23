@@ -9,6 +9,10 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { addCost, addWarranty, deleteAsset, deleteCost, deleteWarranty, updateAsset } from "../../../actions";
 import { AssetFields } from "../asset-fields";
 import { NewTaskForm, TaskRow } from "../../task-forms";
+import { aiConfigured } from "@/lib/ai/client";
+import { deleteAssetPhoto } from "../../../photo-actions";
+import { PhotoUpload } from "./photo-upload";
+import { coverPhoto } from "@/lib/documents";
 
 export default async function AssetPage({ params }: PageProps<"/properties/[id]/assets/[assetId]">) {
   const { id, assetId } = await params;
@@ -37,10 +41,25 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
   const totalSpend = asset.costRecords.reduce((s, c) => s + c.amount, 0);
   const activeWarranty = asset.warranties.find((w) => daysUntil(w.endDate) >= 0);
   const base = `/properties/${property.id}`;
+  const photos = asset.documents.filter((d) => d.kind === "photo");
+  const otherDocs = asset.documents.filter((d) => d.kind !== "photo");
+  const cover = coverPhoto(photos);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+        {cover ? (
+          <a href={`/api/documents/${cover.id}`} target="_blank" className="block shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/documents/${cover.id}`} alt={cover.caption ?? asset.name} className="h-20 w-20 rounded-xl border border-border object-cover" />
+          </a>
+        ) : (
+          <a href="#photos" className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-accent/50 text-center text-xs text-accent hover:bg-surface-2">
+            <span className="text-xl" aria-hidden="true">📷</span>
+            Add photo
+          </a>
+        )}
         <div>
           <Link href={base} className="text-xs text-muted hover:underline">← {property.name}</Link>
           <h2 className="mt-1 text-xl font-semibold">{asset.name}</h2>
@@ -52,13 +71,14 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
             <Badge tone={statusTone(asset.status)}>{label(asset.status)}</Badge>
           </div>
         </div>
+        </div>
         <Link href={`/assistant?property=${property.id}&q=${encodeURIComponent(`Tell me about my ${asset.name}`)}`} className="btn-secondary">
           Ask the assistant
         </Link>
       </div>
 
       {SAFETY_CRITICAL_CATEGORIES.has(asset.category) && (
-        <p className="rounded-lg border border-warn/40 px-4 py-3 text-sm text-warn">
+        <p className="rounded-lg bg-warn-bg px-4 py-3 text-sm text-warn">
           {label(asset.category)} systems can be hazardous. Use a qualified, licensed professional for inspection and repairs.
         </p>
       )}
@@ -92,6 +112,34 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
+          <section className="card scroll-mt-6" id="photos">
+            <SectionHeader title={`Photos (${photos.length})`} />
+            {photos.length === 0 ? (
+              <Empty>Take a photo of the item and its model / serial label so you can identify it later, even after the sticker wears off.</Empty>
+            ) : (
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {photos.map((p) => (
+                  <li key={p.id} className="group overflow-hidden rounded-lg border border-border">
+                    <a href={`/api/documents/${p.id}`} target="_blank" className="block aspect-square bg-surface-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/api/documents/${p.id}`} alt={p.caption ?? p.filename} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
+                    </a>
+                    <div className="flex items-start justify-between gap-2 p-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-medium">{p.caption ?? "Photo"}</div>
+                        <div className="text-[11px] text-muted">{formatDate(p.createdAt)}</div>
+                      </div>
+                      <form action={deleteAssetPhoto}>
+                        <Hidden name="documentId" value={p.id} />
+                        <ConfirmButton message="Delete this photo?" className="text-xs text-muted hover:text-danger">✕</ConfirmButton>
+                      </form>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section className="card">
             <SectionHeader title="Maintenance" />
             {asset.tasks.length === 0 ? (
@@ -165,11 +213,11 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
             <SectionHeader title="Documents">
               <Link href={`${base}/documents?asset=${asset.id}`} className="btn-link">Upload</Link>
             </SectionHeader>
-            {asset.documents.length === 0 ? (
+            {otherDocs.length === 0 ? (
               <Empty>No documents linked. Upload a receipt, manual or warranty card.</Empty>
             ) : (
               <ul className="divide-y divide-border text-sm">
-                {asset.documents.map((d) => (
+                {otherDocs.map((d) => (
                   <li key={d.id} className="flex items-center gap-3 py-2">
                     <a href={`/api/documents/${d.id}`} target="_blank" className="font-medium hover:underline">{d.filename}</a>
                     <span className="text-xs text-muted">{label(d.kind)}</span>
@@ -199,6 +247,7 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
         </div>
 
         <aside className="space-y-4">
+          <PhotoUpload propertyId={property.id} assetId={asset.id} aiEnabled={aiConfigured()} />
           <NewTaskForm propertyId={property.id} assetId={asset.id} />
 
           <div className="card space-y-3">

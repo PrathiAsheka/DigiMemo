@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "./db";
 import { getSessionUserId } from "./session";
 
-export type CurrentUser = { id: string; name: string; email: string };
+export type CurrentUser = { id: string; name: string; email: string; useCase: string | null };
 
 /** Data Access Layer entry point: resolves the signed-in user or redirects to /login. */
 export const requireUser = cache(async (): Promise<CurrentUser> => {
@@ -12,7 +12,7 @@ export const requireUser = cache(async (): Promise<CurrentUser> => {
   if (!userId) redirect("/login");
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, useCase: true },
   });
   if (!user) redirect("/login");
   return user;

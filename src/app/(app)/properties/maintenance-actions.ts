@@ -5,23 +5,14 @@ import { assertOwnsProperty, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { WORK_ORDER_PRIORITIES, WORK_ORDER_STATUSES } from "@/lib/constants";
 import { addDays, startOfDayUTC } from "@/lib/format";
-import { date, float, int, oneOf, required, str } from "@/lib/forms";
+import { date, float, int, intervalDays as readInterval, oneOf, required, str } from "@/lib/forms";
+import { resolveAssetId, resolveProviderId } from "@/lib/form-entities";
 
 async function ownedProperty(form: FormData) {
   const user = await requireUser();
   const propertyId = required(form, "propertyId");
   await assertOwnsProperty(user.id, propertyId);
   return { user, propertyId };
-}
-
-async function validAssetId(propertyId: string, assetId: string | null) {
-  if (!assetId) return null;
-  return (await db.asset.count({ where: { id: assetId, propertyId } })) ? assetId : null;
-}
-
-async function validProviderId(userId: string, providerId: string | null) {
-  if (!providerId) return null;
-  return (await db.serviceProvider.count({ where: { id: providerId, ownerId: userId } })) ? providerId : null;
 }
 
 function revalidateProperty(propertyId: string) {
@@ -33,14 +24,14 @@ function revalidateProperty(propertyId: string) {
 
 export async function createTask(form: FormData) {
   const { propertyId } = await ownedProperty(form);
-  const intervalDays = int(form, "intervalDays");
+  const intervalDays = readInterval(form, "intervalDays");
   await db.maintenanceTask.create({
     data: {
       propertyId,
-      assetId: await validAssetId(propertyId, str(form, "assetId")),
+      assetId: await resolveAssetId(form, "assetId", propertyId),
       title: required(form, "title"),
       description: str(form, "description"),
-      intervalDays: intervalDays && intervalDays > 0 ? intervalDays : null,
+      intervalDays,
       nextDueDate: date(form, "nextDueDate") ?? startOfDayUTC(new Date()),
     },
   });
@@ -67,7 +58,7 @@ export async function completeTask(form: FormData) {
         propertyId,
         assetId: task.assetId,
         taskId: task.id,
-        providerId: await validProviderId(user.id, str(form, "providerId")),
+        providerId: await resolveProviderId(form, "providerId", user.id),
         title: task.title,
         status: "completed",
         completedAt,
@@ -120,11 +111,11 @@ export async function deleteTask(form: FormData) {
 export async function createWorkOrder(form: FormData) {
   const { user, propertyId } = await ownedProperty(form);
   const scheduledFor = date(form, "scheduledFor");
-  const providerId = await validProviderId(user.id, str(form, "providerId"));
+  const providerId = await resolveProviderId(form, "providerId", user.id);
   await db.workOrder.create({
     data: {
       propertyId,
-      assetId: await validAssetId(propertyId, str(form, "assetId")),
+      assetId: await resolveAssetId(form, "assetId", propertyId),
       providerId,
       title: required(form, "title"),
       description: str(form, "description"),
@@ -152,7 +143,7 @@ export async function updateWorkOrder(form: FormData) {
       data: {
         status,
         priority: oneOf(form, "priority", WORK_ORDER_PRIORITIES, wo.priority as (typeof WORK_ORDER_PRIORITIES)[number]),
-        providerId: form.has("providerId") ? await validProviderId(user.id, str(form, "providerId")) : wo.providerId,
+        providerId: form.has("providerId") ? await resolveProviderId(form, "providerId", user.id) : wo.providerId,
         scheduledFor: form.has("scheduledFor") ? date(form, "scheduledFor") : wo.scheduledFor,
         resolution: str(form, "resolution") ?? wo.resolution,
         completedAt: status === "completed" ? completedAt : null,

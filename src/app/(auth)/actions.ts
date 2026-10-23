@@ -26,14 +26,17 @@ export async function signup(_prev: AuthState, form: FormData): Promise<AuthStat
     data: { name, email, passwordHash: await bcrypt.hash(password, 12) },
   });
   await createSession(user.id);
-  redirect("/properties/new");
+  redirect("/welcome");
 }
 
 export async function login(_prev: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
   const user = await db.user.findUnique({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  if (user && !user.passwordHash) {
+    return { error: "This account signs in with Google. Use “Continue with Google” above." };
+  }
+  if (!user || !(await bcrypt.compare(password, user.passwordHash!))) {
     return { error: "Incorrect email or password" };
   }
   await createSession(user.id);

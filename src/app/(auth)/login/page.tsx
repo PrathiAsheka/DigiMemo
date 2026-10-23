@@ -1,5 +1,6 @@
 import { AuthForm } from "../auth-form";
 
-export default function LoginPage() {
-  return <AuthForm mode="login" />;
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { error } = await searchParams;
+  return <AuthForm mode="login" error={typeof error === "string" ? error : undefined} />;
 }

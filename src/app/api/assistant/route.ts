@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
 import { buildPropertyContext, streamAssistantReply } from "@/lib/ai/assistant";
 import { aiConfigured, describeAiError } from "@/lib/ai/client";
+import { getProfile } from "@/lib/profiles";
 
 export const maxDuration = 300;
 
@@ -30,8 +31,9 @@ export async function POST(req: NextRequest) {
     return new Response("Not found", { status: 404 });
   }
 
+  const user = await db.user.findUnique({ where: { id: userId }, select: { useCase: true } });
   const context = await buildPropertyContext(userId, propertyId);
-  const stream = streamAssistantReply(context, messages);
+  const stream = streamAssistantReply(context, getProfile(user?.useCase).assistantContext, messages);
   const encoder = new TextEncoder();
 
   const body = new ReadableStream<Uint8Array>({

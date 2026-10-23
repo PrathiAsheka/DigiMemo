@@ -1,5 +1,3 @@
-import { label } from "@/lib/constants";
-
 /** `id` must be passed (to both Field and its control) when a form is repeated on a page. */
 export function Field({
   label: text,
@@ -32,31 +30,8 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return <textarea id={props.name} rows={3} className="input" {...props} />;
 }
 
-export function Select({
-  name,
-  id,
-  options,
-  defaultValue,
-  emptyLabel,
-}: {
-  name: string;
-  id?: string;
-  options: readonly string[] | { value: string; label: string }[];
-  defaultValue?: string | null;
-  emptyLabel?: string;
-}) {
-  const opts = options.map((o) => (typeof o === "string" ? { value: o, label: label(o) } : o));
-  return (
-    <select id={id ?? name} name={name} className="input" defaultValue={defaultValue ?? ""}>
-      {emptyLabel !== undefined && <option value="">{emptyLabel}</option>}
-      {opts.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-}
+// Every dropdown offers "Other…" with a text box (client component).
+export { Select } from "./select";
 
 export function Hidden({ name, value }: { name: string; value: string }) {
   return <input type="hidden" name={name} value={value} />;
@@ -67,11 +42,32 @@ export function Empty({ children }: { children: React.ReactNode }) {
 }
 
 const TONES: Record<string, string> = {
-  ok: "text-ok border-ok/40",
-  warn: "text-warn border-warn/40",
-  danger: "text-danger border-danger/40",
-  muted: "text-muted",
+  ok: "bg-ok-bg text-ok",
+  warn: "bg-warn-bg text-warn",
+  danger: "bg-danger-bg text-danger",
+  muted: "bg-surface-2 text-muted",
 };
+
+/** Page title block: one clear heading, one line saying what the page is for. */
+export function PageHeader({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="h1">{title}</h1>
+        {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+      </div>
+      {children && <div className="flex items-center gap-3">{children}</div>}
+    </div>
+  );
+}
 
 export function Badge({ tone = "muted", children }: { tone?: keyof typeof TONES; children: React.ReactNode }) {
   return <span className={`badge ${TONES[tone]}`}>{children}</span>;
@@ -104,11 +100,22 @@ export function SectionHeader({ title, children }: { title: string; children?: R
   );
 }
 
-export function Stat({ label: text, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+export function Stat({
+  label: text,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  tone?: "danger" | "warn" | "ok";
+}) {
+  const color = tone === "danger" ? "text-danger" : tone === "warn" ? "text-warn" : tone === "ok" ? "text-ok" : "";
   return (
     <div className="card">
       <div className="text-xs font-medium text-muted">{text}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${color}`}>{value}</div>
       {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
     </div>
   );

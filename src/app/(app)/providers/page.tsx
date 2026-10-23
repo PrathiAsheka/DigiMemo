@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
-import { Empty, Field, Hidden, Input, TextArea } from "@/components/ui";
+import { Empty, Field, Hidden, Input, PageHeader, TextArea } from "@/components/ui";
 import { ConfirmButton } from "@/components/confirm-button";
 import { createProvider, deleteProvider } from "./actions";
 
@@ -18,10 +18,10 @@ export default async function ProvidersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="h1">Service providers</h1>
-        <p className="mt-1 text-sm text-muted">Your own list of technicians and companies, so you always know who serviced what.</p>
-      </div>
+      <PageHeader
+        title="Service providers"
+        description="Your own list of technicians and companies, so you always know who serviced what."
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="card">
           {providers.length === 0 ? (

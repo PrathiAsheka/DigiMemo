@@ -3,11 +3,32 @@ import { Field, Input, Select, TextArea } from "@/components/ui";
 import { ASSET_CATEGORIES, ASSET_STATUSES } from "@/lib/constants";
 import { toDateInput } from "@/lib/format";
 
-export function AssetFields({ asset, spaces, withWarranty }: { asset?: Asset; spaces: Space[]; withWarranty?: boolean }) {
+export function AssetFields({
+  asset,
+  spaces,
+  withWarranty,
+  suggestions = [],
+}: {
+  asset?: Asset;
+  spaces: Space[];
+  withWarranty?: boolean;
+  suggestions?: string[];
+}) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Name" name="name" className="sm:col-span-2">
-        <Input name="name" required placeholder="e.g. Kitchen refrigerator" defaultValue={asset?.name} />
+        <Input
+          name="name"
+          required
+          placeholder={suggestions[0] ? `e.g. ${suggestions[0]}` : "e.g. Kitchen refrigerator"}
+          defaultValue={asset?.name}
+          list={suggestions.length ? "asset-suggestions" : undefined}
+        />
+        {suggestions.length > 0 && (
+          <datalist id="asset-suggestions">
+            {suggestions.map((s) => <option key={s} value={s} />)}
+          </datalist>
+        )}
       </Field>
       <Field label="Category" name="category">
         <Select name="category" options={ASSET_CATEGORIES} defaultValue={asset?.category ?? "appliance"} />
@@ -18,7 +39,7 @@ export function AssetFields({ asset, spaces, withWarranty }: { asset?: Asset; sp
           emptyLabel="— Not assigned"
           options={spaces.map((s) => ({ value: s.id, label: s.name }))}
           defaultValue={asset?.spaceId}
-        />
+        otherPlaceholder="New room name" />
       </Field>
       <Field label="Manufacturer" name="manufacturer">
         <Input name="manufacturer" defaultValue={asset?.manufacturer ?? ""} />

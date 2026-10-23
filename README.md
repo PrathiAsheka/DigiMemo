@@ -14,6 +14,8 @@ Every property gets a structured digital record covering its spaces, assets, doc
 | Maintenance schedules, reminders, work orders | Property → Maintenance (recurring tasks roll forward on completion and record a service entry and cost) and Work orders |
 | AI chat over your own data | `/assistant`, grounded in the property record, with safety rules for electrical, gas and structural systems |
 | Dashboard | `/dashboard`: overdue, next 30 days, warranties ending, replacement age, upkeep spend |
+| Alerts | Bell in the header and `/alerts`: maintenance due or overdue, warranties and contracts ending, ageing equipment, urgent jobs, scheduled visits, broken equipment, documents to review. Generated from the record (`src/lib/alerts.ts`), they clear themselves when resolved; lead times are set per user |
+| Product photos | Equipment pages hold photos (front view, model/serial label…) taken with the phone camera or uploaded; the latest shows as a thumbnail everywhere. One label photo can be read by AI |
 
 Out of scope for now, per the proposal: 3D, IoT, the technician marketplace and payments, and multi-property enterprise features. Reminders are shown in the app only; email and push notifications are not built yet.
 
@@ -30,11 +32,22 @@ Out of scope for now, per the proposal: 3D, IoT, the technician marketplace and 
 npm install
 cp .env.example .env    # then set SESSION_SECRET and ANTHROPIC_API_KEY
 npx prisma migrate dev
-npm run db:seed         # optional demo account and sample house (see prisma/seed.ts)
+npm run db:seed         # optional demo data: a homeowner account (house, apartment, beach house, office)
+                        # and a business account (café + warehouse); logins are in prisma/seed.ts
 npm run dev
 ```
 
-Open http://localhost:3000. Without `ANTHROPIC_API_KEY` everything works except AI extraction and the assistant, and the app says so where those features would appear.
+Open http://localhost:3000.
+
+### Google sign-in
+
+"Continue with Google" works once the server has OAuth credentials:
+
+1. In Google Cloud Console → APIs & Services → Credentials, create an **OAuth client ID** of type **Web application**.
+2. Add the authorized redirect URI `http://localhost:3000/api/auth/google/callback` (plus your production URL's equivalent).
+3. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` (set `APP_URL` in production) and restart the server.
+
+A Google account is linked to an existing account with the same email only when Google reports the email as verified. Email/password sign-in keeps working alongside it. Without `ANTHROPIC_API_KEY` everything works except AI extraction and the assistant, and the app says so where those features would appear.
 
 ## Layout
 

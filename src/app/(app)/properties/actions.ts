@@ -12,7 +12,10 @@ import {
   SPACE_KINDS,
 } from "@/lib/constants";
 import { date, float, int, oneOf, required, str } from "@/lib/forms";
+import { getProfile, profileForPropertyType } from "@/lib/profiles";
+import { alreadyHas, templateForSpace, type SpaceTemplate } from "@/lib/space-templates";
 import { deleteStoredFile } from "@/lib/storage";
+import { resolveAssetId, resolveSpaceId } from "@/lib/form-entities";
 
 // Every action re-reads the session and checks ownership; never trust ids from the form.
 
@@ -31,25 +34,12 @@ async function ownedAsset(form: FormData) {
   return { user, propertyId, asset };
 }
 
-/** Space ids from forms must belong to the same property. */
-async function validSpaceId(propertyId: string, spaceId: string | null) {
-  if (!spaceId) return null;
-  const ok = await db.space.count({ where: { id: spaceId, propertyId } });
-  return ok ? spaceId : null;
-}
-
 // ── Properties ──────────────────────────────────────────────────────────────
-
-const DEFAULT_SPACES: Record<string, string[]> = {
-  house: ["Kitchen", "Living Room", "Bedroom", "Bathroom", "Laundry", "Exterior"],
-  townhouse: ["Kitchen", "Living Room", "Bedroom", "Bathroom", "Exterior"],
-  apartment: ["Kitchen", "Living Room", "Bedroom", "Bathroom"],
-  condo: ["Kitchen", "Living Room", "Bedroom", "Bathroom"],
-};
 
 export async function createProperty(form: FormData) {
   const user = await requireUser();
-  const type = oneOf(form, "type", PROPERTY_TYPES, "house");
+  const profile = getProfile(user.useCase);
+  const type = oneOf(form, "type", PROPERTY_TYPES, profile.propertyType as (typeof PROPERTY_TYPES)[number]);
   const property = await db.property.create({
     data: {
       ownerId: user.id,
@@ -62,14 +52,10 @@ export async function createProperty(form: FormData) {
   });
   // Smart defaults (proposal §20): start with typical rooms so onboarding is one step shorter.
   if (form.get("seedSpaces") === "on") {
-    const names = DEFAULT_SPACES[type] ?? [];
-    await db.space.createMany({
-      data: names.map((name) => ({
-        propertyId: property.id,
-        name,
-        kind: name === "Exterior" ? "exterior" : "room",
-      })),
-    });
+    const withAssets = form.get("seedAssets") === "on";
+    for (const t of profileForPropertyType(type, profile).spaces) {
+      await createSpaceFromTemplate(property.id, t, withAssets);
+    }
   }
   redirect(`/properties/${property.id}`);
 }
@@ -106,8 +92,68 @@ export async function createSpace(form: FormData) {
       propertyId,
       name: required(form, "name"),
       kind: oneOf(form, "kind", SPACE_KINDS, "room"),
-      parentId: await validSpaceId(propertyId, str(form, "parentId")),
+      parentId: await resolveSpaceId(form, "parentId", propertyId),
     },
+  });
+  revalidatePath(`/properties/${propertyId}`);
+}
+
+async function createSpaceFromTemplate(propertyId: string, t: SpaceTemplate, withAssets: boolean) {
+  const space = await db.space.create({ data: { propertyId, name: t.name, kind: t.kind } });
+  if (withAssets) {
+    await db.asset.createMany({
+      data: t.assets.map((x) => ({
+        propertyId,
+        spaceId: space.id,
+        name: x.name,
+        category: x.category,
+        expectedLifeYears: x.lifeYears,
+      })),
+    });
+  }
+}
+
+/** Templates for the property's own type, so suggestions match what the user picked. */
+async function templatesFor(userUseCase: string | null, propertyId: string) {
+  const property = await db.property.findUniqueOrThrow({ where: { id: propertyId }, select: { type: true } });
+  return profileForPropertyType(property.type, getProfile(userUseCase)).spaces;
+}
+
+/** One-click "add a typical room" (optionally with its typical equipment). */
+export async function addTemplateSpace(form: FormData) {
+  const { user, propertyId } = await ownedProperty(form);
+  const templates = await templatesFor(user.useCase, propertyId);
+  const t = templates.find((x) => x.name === required(form, "template"));
+  if (!t) throw new Error("Unknown room type");
+  await createSpaceFromTemplate(propertyId, t, form.get("withAssets") === "on");
+  revalidatePath(`/properties/${propertyId}`);
+}
+
+/**
+ * Adds suggested equipment to a room. Only names from that room's catalogue are
+ * accepted, and anything already in the room is skipped.
+ */
+export async function addSuggestedAssets(form: FormData) {
+  const { user, propertyId } = await ownedProperty(form);
+  const space = await db.space.findFirst({
+    where: { id: required(form, "spaceId"), propertyId },
+    include: { assets: { select: { name: true } } },
+  });
+  if (!space) throw new Error("Space not found");
+
+  const template = templateForSpace(space.name, await templatesFor(user.useCase, propertyId));
+  const wanted = new Set(form.getAll("asset").map(String));
+  const have = space.assets.map((x) => x.name);
+  const toAdd = (template?.assets ?? []).filter((x) => wanted.has(x.name) && !alreadyHas(have, x.name));
+
+  await db.asset.createMany({
+    data: toAdd.map((x) => ({
+      propertyId,
+      spaceId: space.id,
+      name: x.name,
+      category: x.category,
+      expectedLifeYears: x.lifeYears,
+    })),
   });
   revalidatePath(`/properties/${propertyId}`);
 }
@@ -125,7 +171,7 @@ async function assetData(form: FormData, propertyId: string) {
     name: required(form, "name"),
     category: oneOf(form, "category", ASSET_CATEGORIES, "appliance"),
     status: oneOf(form, "status", ASSET_STATUSES, "active"),
-    spaceId: await validSpaceId(propertyId, str(form, "spaceId")),
+    spaceId: await resolveSpaceId(form, "spaceId", propertyId),
     manufacturer: str(form, "manufacturer"),
     model: str(form, "model"),
     serialNumber: str(form, "serialNumber"),
@@ -201,10 +247,7 @@ export async function deleteWarranty(form: FormData) {
 
 export async function addCost(form: FormData) {
   const { propertyId } = await ownedProperty(form);
-  const assetId = str(form, "assetId");
-  if (assetId && !(await db.asset.count({ where: { id: assetId, propertyId } }))) {
-    throw new Error("Asset not found");
-  }
+  const assetId = await resolveAssetId(form, "assetId", propertyId);
   const amount = float(form, "amount");
   if (amount == null) throw new Error("Amount is required");
   await db.costRecord.create({

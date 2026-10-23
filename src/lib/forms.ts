@@ -1,5 +1,7 @@
 // Small helpers for reading FormData in server actions.
 
+import { OTHER } from "./other";
+
 export function str(form: FormData, key: string): string | null {
   const v = form.get(key);
   if (typeof v !== "string") return null;
@@ -34,7 +36,25 @@ export function date(form: FormData, key: string): Date | null {
   return new Date(`${v}T00:00:00.000Z`);
 }
 
-export function oneOf<T extends readonly string[]>(form: FormData, key: string, allowed: T, fallback: T[number]): T[number] {
+/** Text typed next to a dropdown's "Other…" choice, if that choice was picked. */
+export function otherText(form: FormData, key: string): string | null {
+  if (str(form, key) !== OTHER) return null;
+  return str(form, `${key}__other`)?.replace(/\s+/g, " ").slice(0, 60) ?? null;
+}
+
+/**
+ * A dropdown value from a known list, or the user's own text when they picked "Other…"
+ * (stored as typed; "other" if they left the box empty). Unknown values fall back.
+ */
+export function oneOf<T extends readonly string[]>(form: FormData, key: string, allowed: T, fallback: T[number]): string {
   const v = str(form, key);
-  return v && (allowed as readonly string[]).includes(v) ? (v as T[number]) : fallback;
+  if (v === OTHER) return otherText(form, key) ?? "other";
+  return v && (allowed as readonly string[]).includes(v) ? v : fallback;
+}
+
+/** A "repeat every N days" dropdown, where "Other…" means a typed number of days. */
+export function intervalDays(form: FormData, key: string): number | null {
+  const raw = str(form, key) === OTHER ? str(form, `${key}__other`) : str(form, key);
+  const n = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 3650) : null;
 }

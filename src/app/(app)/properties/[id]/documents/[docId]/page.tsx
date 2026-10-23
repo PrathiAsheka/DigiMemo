@@ -155,10 +155,10 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
                 <legend className="text-sm font-medium">Asset</legend>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Save to" name="target">
-                    <Select name="target" options={[{ value: "new", label: "Create a new asset" }, ...assetOptions]} defaultValue={doc.assetId ?? "new"} />
+                    <Select name="target" options={[{ value: "new", label: "Create a new asset" }, ...assetOptions]} defaultValue={doc.assetId ?? "new"} other={false} />
                   </Field>
                   <Field label="Space" name="spaceId">
-                    <Select name="spaceId" emptyLabel="— Not assigned" options={spaces.map((s) => ({ value: s.id, label: s.name }))} />
+                    <Select name="spaceId" emptyLabel="— Not assigned" options={spaces.map((s) => ({ value: s.id, label: s.name }))} otherPlaceholder="New room name" />
                   </Field>
                   <ReviewInput name="name" text="Name" value={extraction.asset.name.value} confidence={extraction.asset.name.confidence} />
                   <div>
@@ -231,7 +231,7 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
               <Hidden name="documentId" value={doc.id} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Type" name="kind"><Select name="kind" options={DOCUMENT_KINDS} defaultValue={doc.kind} /></Field>
-                <Field label="Linked asset" name="assetId"><Select name="assetId" emptyLabel="— None" options={assetOptions} defaultValue={doc.assetId} /></Field>
+                <Field label="Linked asset" name="assetId"><Select name="assetId" emptyLabel="— None" options={assetOptions} defaultValue={doc.assetId} otherPlaceholder="New equipment name" /></Field>
               </div>
               <button className="btn-secondary">Save</button>
             </form>
