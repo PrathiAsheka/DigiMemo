@@ -1,8 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { OllamaError } from "./ollama";
 
-// Claude client, used when AI_PROVIDER is "anthropic" (the default); see provider.ts.
+// Hosted AI API client for document reading.
 // Credentials resolve from ANTHROPIC_API_KEY (or an `ant auth login` profile).
 export const anthropic = new Anthropic();
 
@@ -20,10 +19,9 @@ export const FALLBACK: Pick<Anthropic.Beta.MessageCreateParams, "betas" | "fallb
 
 export { aiConfigured } from "./provider";
 
-/** User-facing message for an AI failure (either provider); details go to the server log. */
+/** User-facing message for an AI failure; details go to the server log. */
 export function describeAiError(error: unknown) {
   console.error("[ai]", error);
-  if (error instanceof OllamaError) return error.message;
   if (error instanceof Anthropic.AuthenticationError) return "The AI service is not configured (invalid API key).";
   if (error instanceof Anthropic.RateLimitError) return "The AI service is busy. Please try again in a minute.";
   if (error instanceof Anthropic.BadRequestError) return "The AI service could not process this file.";

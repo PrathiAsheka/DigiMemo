@@ -29,7 +29,7 @@ Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. 
 - Next.js 16 (App Router, Server Actions) with TypeScript and Tailwind CSS v4.
 - Prisma 6 with SQLite for local development. Switch `provider` in `prisma/schema.prisma` to `postgresql` for production.
 - Uploaded files are stored on local disk under `UPLOAD_DIR` and served only to their owner through `/api/documents/[id]`. Swap `src/lib/storage.ts` for S3 or GCS in production.
-- Optional AI document reading through a hosted AI API or a free local model (see below).
+- Optional AI document reading through a hosted AI API (see below).
 
 ## Getting started
 
@@ -46,26 +46,7 @@ Open http://localhost:3000.
 
 ### AI document reading (optional)
 
-Uploading a receipt, warranty card or label photo can fill in the equipment, warranty and cost details for you to check. Everything else works without it. Choose a provider with `AI_PROVIDER` in `.env`:
-
-| | Hosted API (`AI_PROVIDER=anthropic`, default) | Ollama (`AI_PROVIDER=ollama`) |
-| --- | --- | --- |
-| Cost | Paid per use (`ANTHROPIC_API_KEY`) | Free |
-| Privacy | Sent to the AI provider's API | Never leaves your computer |
-| Quality | Reads receipts and labels reliably | Good enough to try; check extracted fields more carefully |
-| Needs | Internet | A PC with 8 GB+ RAM (a GPU makes it much faster); only works while it's on |
-
-To use Ollama:
-
-1. Install Ollama from https://ollama.com.
-2. Download a vision model, which can read photos of receipts and labels:
-   ```bash
-   ollama pull qwen2.5vl:3b
-   ```
-   (`qwen2.5vl:7b` is more accurate but needs about 8 GB of free memory.)
-3. In `.env` set `AI_PROVIDER="ollama"` and `OLLAMA_MODEL="qwen2.5vl:3b"`, then restart `npm run dev`.
-
-With Ollama, PDFs are read from their text layer; for scanned PDFs, upload a photo instead. `OLLAMA_NUM_CTX` (default 8192) sets the model's context size; larger is slower on small graphics cards.
+Uploading a receipt, warranty card or label photo can fill in the equipment, warranty and cost details for you to check before saving. It's off by default and everything else works without it. To turn it on, set `ANTHROPIC_API_KEY` in `.env` (a hosted AI API, paid per use) and restart `npm run dev`.
 
 ### Google sign-in
 
@@ -89,7 +70,7 @@ src/app/(app)/                       signed-in app: dashboard, properties, alert
 src/app/(app)/properties/*actions.ts server actions (each re-checks ownership)
 src/app/api/                         document files, AI extraction, Google sign-in
 src/lib/                             db, session/auth, alerts, profiles, room templates, storage, formatting
-src/lib/ai/                          document extraction (hosted API or Ollama)
+src/lib/ai/                          optional AI document extraction
 src/components/                      UI building blocks, photos, illustrations
 ```
 
