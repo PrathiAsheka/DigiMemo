@@ -5,6 +5,7 @@ import { label } from "@/lib/constants";
 import { addDays, ageInYears, daysUntil, formatDate, formatMoney, relativeDue, startOfDayUTC } from "@/lib/format";
 import { getProfile, profileForPropertyType } from "@/lib/profiles";
 import { syncAlerts, unreadAlertCount } from "@/lib/alerts";
+import { NotificationPrompt } from "@/components/alert-notifier";
 import { Badge, Empty, SectionHeader } from "@/components/ui";
 
 type Severity = "critical" | "soon";
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
         <div className="space-y-4 p-8">
           <h1 className="h1">Welcome, {user.name.split(" ")[0]}</h1>
           <p className="text-muted">
-            Start by adding your {profile.noun}. Then upload a receipt or warranty card and the assistant will build the equipment record for you.
+            Start by adding your {profile.noun}. Then add the rooms and equipment you want to keep track of.
           </p>
           <Link href="/properties/new" className="btn">Add your {profile.noun}</Link>
         </div>
@@ -166,6 +167,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <NotificationPrompt />
+
       {/* 1. Header: who, what, and the most common actions */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -190,7 +193,7 @@ export default async function DashboardPage() {
           <Link href={base ? `${base}/assets/new` : "/properties"} className="btn">+ Add equipment</Link>
           <Link href={base ? `${base}/documents` : "/properties"} className="btn-secondary">Upload document</Link>
           <Link href={base ? `${base}/work-orders` : "/properties"} className="btn-secondary">New work order</Link>
-          <Link href="/assistant" className="btn-secondary">Ask assistant</Link>
+          <Link href="/alerts" className="btn-secondary">View alerts</Link>
         </nav>
       </header>
 

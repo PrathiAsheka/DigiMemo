@@ -20,6 +20,21 @@ export async function createProvider(form: FormData) {
   revalidatePath("/providers");
 }
 
+export async function updateProvider(form: FormData) {
+  const user = await requireUser();
+  await db.serviceProvider.updateMany({
+    where: { id: required(form, "providerId"), ownerId: user.id },
+    data: {
+      name: required(form, "name"),
+      category: str(form, "category"),
+      phone: str(form, "phone"),
+      email: str(form, "email"),
+      notes: str(form, "notes"),
+    },
+  });
+  revalidatePath("/providers");
+}
+
 export async function deleteProvider(form: FormData) {
   const user = await requireUser();
   await db.serviceProvider.deleteMany({ where: { id: required(form, "providerId"), ownerId: user.id } });

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { LOGIN_PHOTO, LOGIN_THUMBS } from "@/components/photos";
 
 const Logo = () => (
@@ -26,10 +27,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="absolute inset-0 bg-gradient-to-b from-header/85 via-header/20 to-header/75" />
 
         <div className="relative z-10 p-6 lg:p-10">
-          <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <Link href="/" className="flex w-fit items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-90">
             <Logo />
             Home Digital Twin
-          </div>
+          </Link>
           <h2 className="mt-6 max-w-md text-2xl font-semibold leading-tight tracking-tight lg:text-4xl">
             Know your property. Maintain it before it breaks.
           </h2>

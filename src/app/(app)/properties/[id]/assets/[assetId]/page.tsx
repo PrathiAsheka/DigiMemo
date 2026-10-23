@@ -72,8 +72,8 @@ export default async function AssetPage({ params }: PageProps<"/properties/[id]/
           </div>
         </div>
         </div>
-        <Link href={`/assistant?property=${property.id}&q=${encodeURIComponent(`Tell me about my ${asset.name}`)}`} className="btn-secondary">
-          Ask the assistant
+        <Link href={`${base}/work-orders?asset=${asset.id}`} className="btn-secondary">
+          Report a problem
         </Link>
       </div>
 

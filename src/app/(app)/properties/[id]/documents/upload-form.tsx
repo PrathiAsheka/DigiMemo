@@ -10,11 +10,13 @@ export function UploadForm({
   assets,
   presetAssetId,
   aiEnabled,
+  aiHint,
 }: {
   propertyId: string;
   assets: { id: string; name: string }[];
   presetAssetId?: string;
   aiEnabled: boolean;
+  aiHint: string;
 }) {
   const [state, action, pending] = useActionState<UploadState, FormData>(uploadDocument, undefined);
 
@@ -56,7 +58,7 @@ export function UploadForm({
           Read it with AI and suggest asset details
         </label>
       ) : (
-        <p className="text-xs text-muted">AI extraction is off: set ANTHROPIC_API_KEY to enable it.</p>
+        <p className="text-xs text-muted">{aiHint}</p>
       )}
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       <button className="btn w-full" disabled={pending}>{pending ? "Uploading…" : "Upload"}</button>

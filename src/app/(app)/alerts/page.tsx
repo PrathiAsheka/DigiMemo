@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import { Field, Hidden, PageHeader, Select } from "@/components/ui";
+import { NotificationSettings } from "@/components/alert-notifier";
 import {
   dismissAlert,
   markAlertRead,
@@ -153,6 +154,9 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
         </div>
 
         <aside className="space-y-4">
+          <div id="notifications" className="scroll-mt-6">
+            <NotificationSettings />
+          </div>
           <form action={updateReminderSettings} className="card space-y-3">
             <div>
               <h2 className="h2">When to remind me</h2>
@@ -188,7 +192,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
             <button className="btn w-full">Save reminders</button>
           </form>
           <div className="card text-xs text-muted">
-            Alerts show on the bell at the top of every page. Email and phone notifications are planned for a later version.
+            Alerts show on the bell at the top of every page, and as device notifications if you turn them on. Notifications appear while the app is open in a browser tab; email reminders are planned for a later version.
           </div>
         </aside>
       </div>

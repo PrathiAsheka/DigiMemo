@@ -16,7 +16,7 @@ export default async function WelcomePage() {
         <p className="text-sm text-header-muted">{changing ? "Change what you manage" : `Welcome, ${user.name.split(" ")[0]}`}</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">What will you look after?</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm text-header-muted">
-          We&apos;ll set up rooms, suggested equipment, maintenance tasks and the assistant to suit it. You can change this later.
+          We&apos;ll set up rooms, suggested equipment, and maintenance tasks to suit it. You can change this later.
         </p>
       </div>
 

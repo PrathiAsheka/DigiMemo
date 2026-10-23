@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { label } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { aiConfigured } from "@/lib/ai/client";
+import { aiSetupHint } from "@/lib/ai/provider";
 import { Badge, Empty } from "@/components/ui";
 import { UploadForm } from "./upload-form";
 
@@ -61,6 +62,7 @@ export default async function DocumentsPage({ params, searchParams }: PageProps<
           assets={assets}
           presetAssetId={typeof asset === "string" ? asset : undefined}
           aiEnabled={aiConfigured()}
+          aiHint={aiSetupHint()}
         />
       </aside>
     </div>

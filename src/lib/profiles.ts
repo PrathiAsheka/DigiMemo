@@ -25,8 +25,6 @@ export type Profile = {
   spaces: SpaceTemplate[];
   assetSuggestions: string[];
   taskSuggestions: { title: string; intervalDays: number | null }[];
-  assistantSuggestions: string[];
-  assistantContext: string;
 };
 
 const PROFILES: Record<UseCase, Profile> = {
@@ -51,14 +49,6 @@ const PROFILES: Record<UseCase, Profile> = {
       { title: "Flush water heater", intervalDays: 365 },
       { title: "Service the boiler / heating", intervalDays: 365 },
     ],
-    assistantSuggestions: [
-      "Which appliances are still under warranty?",
-      "What maintenance is due this month?",
-      "How much did I spend on repairs this year?",
-      "Who serviced my AC last time?",
-      "Which appliances are approaching replacement age?",
-    ],
-    assistantContext: "The user is a homeowner or tenant managing their own house. Use friendly, practical household language.",
   },
   apartment: {
     id: "apartment",
@@ -81,15 +71,6 @@ const PROFILES: Record<UseCase, Profile> = {
       { title: "Check sink and shower drains", intervalDays: 180 },
       { title: "Replace water filter", intervalDays: 180 },
     ],
-    assistantSuggestions: [
-      "Which of my appliances are under warranty?",
-      "What maintenance is due this month?",
-      "What should I report to building management?",
-      "How much have I spent on repairs this year?",
-      "Which documents should I keep for my landlord or deposit?",
-    ],
-    assistantContext:
-      "The user lives in an apartment. Shared building systems (lifts, roof, common plumbing, facade) are usually the building management's or landlord's responsibility; say so when relevant.",
   },
   company: {
     id: "company",
@@ -113,15 +94,6 @@ const PROFILES: Record<UseCase, Profile> = {
       { title: "Fire alarm system inspection", intervalDays: 180 },
       { title: "Elevator inspection", intervalDays: 365 },
     ],
-    assistantSuggestions: [
-      "Which work orders are still open?",
-      "What compliance checks are due this month?",
-      "Which equipment is still under warranty or contract?",
-      "What did we spend on maintenance this year, by asset?",
-      "Which equipment is approaching replacement age?",
-    ],
-    assistantContext:
-      "The user manages a business or facility. Use concise, professional facilities-management language, and mention compliance and contractor scheduling where relevant.",
   },
   other: {
     id: "other",
@@ -143,13 +115,6 @@ const PROFILES: Record<UseCase, Profile> = {
       { title: "Clean water tank", intervalDays: 180 },
       { title: "Service water pump", intervalDays: 365 },
     ],
-    assistantSuggestions: [
-      "What maintenance is due this month?",
-      "Which equipment is under warranty?",
-      "How much did I spend on upkeep this year?",
-      "Which equipment is approaching replacement age?",
-    ],
-    assistantContext: "The user manages a place that is not a typical home or office. Keep advice general and practical.",
   },
 };
 

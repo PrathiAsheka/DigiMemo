@@ -27,7 +27,7 @@ export const WORK_ORDER_STATUSES = ["open", "scheduled", "in_progress", "complet
 export const WORK_ORDER_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export const COST_CATEGORIES = ["purchase", "service", "repair", "replacement", "other"] as const;
 
-/** Categories where the assistant must defer to a qualified professional (proposal §6). */
+/** Categories where only a qualified professional should do the work (proposal §6). */
 export const SAFETY_CRITICAL_CATEGORIES = new Set(["electrical", "structure", "hvac", "solar"]);
 
 const LABELS: Record<string, string> = { hvac: "HVAC" };

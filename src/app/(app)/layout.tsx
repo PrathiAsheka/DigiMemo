@@ -4,8 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { getProfile } from "@/lib/profiles";
 import { activeAlertsWhere, syncAlerts, unreadAlertCount } from "@/lib/alerts";
 import { db } from "@/lib/db";
+import { SiteFooter } from "@/components/site-footer";
+import { AlertNotifier } from "@/components/alert-notifier";
 import { logout } from "../(auth)/actions";
-import { NavLinks } from "./nav-links";
+import { MobileMenu, NavLinks } from "./nav-links";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -18,10 +20,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     db.alert.count({ where: { ...activeAlertsWhere(user.id), severity: "critical" } }),
   ]);
 
+  const signOut = (
+    <form action={logout}>
+      <button className="font-medium text-header-fg hover:underline">Sign out</button>
+    </form>
+  );
+
   return (
     <div className="flex flex-1 flex-col">
-      <header className="bg-header text-header-fg">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
+      <header className="relative bg-header text-header-fg">
+        <div className="mx-auto flex max-w-6xl items-center gap-x-8 px-4 py-3">
           <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
               <path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor" opacity="0.9" />
@@ -29,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Home Digital Twin
           </Link>
           <NavLinks propertiesLabel={profile.navLabel} />
-          <div className="ml-auto flex items-center gap-4 text-sm">
+          <div className="ml-auto flex items-center gap-3 text-sm">
             <Link
               href="/alerts"
               className="relative rounded-md p-1.5 text-header-fg hover:bg-white/10"
@@ -50,16 +58,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </span>
               )}
             </Link>
-            <Link href="/welcome" className="hidden text-header-muted hover:text-header-fg sm:inline" title="Change what you manage">
-              {user.name} · {profile.choiceTitle}
+            <Link
+              href="/account"
+              className="hidden items-center gap-2 rounded-md px-2 py-1 text-header-muted hover:bg-white/10 hover:text-header-fg md:flex"
+              title="Account settings"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-header-fg" aria-hidden="true">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="hidden lg:inline">{user.name}</span>
             </Link>
-            <form action={logout}>
-              <button className="font-medium text-header-fg hover:underline">Sign out</button>
-            </form>
+            <div className="hidden md:block">{signOut}</div>
+            <MobileMenu propertiesLabel={profile.navLabel} userName={user.name} signOut={signOut} />
           </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <SiteFooter signedIn />
+      <AlertNotifier />
     </div>
   );
 }
