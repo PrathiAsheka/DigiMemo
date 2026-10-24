@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { label as humanize } from "@/lib/constants";
+import { useT } from "@/i18n/client";
 import { OTHER } from "@/lib/other";
 
 type Option = { value: string; label: string };
@@ -18,8 +18,8 @@ export function Select({
   defaultValue,
   emptyLabel,
   other = true,
-  otherLabel = "Other…",
-  otherPlaceholder = "Type it here",
+  otherLabel,
+  otherPlaceholder,
   otherType = "text",
 }: {
   name: string;
@@ -33,7 +33,10 @@ export function Select({
   otherPlaceholder?: string;
   otherType?: "text" | "number";
 }) {
-  let opts: Option[] = options.map((o) => (typeof o === "string" ? { value: o, label: humanize(o) } : o));
+  const t = useT();
+  otherLabel ??= t("common.other");
+  otherPlaceholder ??= t("common.typeHere");
+  let opts: Option[] = options.map((o) => (typeof o === "string" ? { value: o, label: t.label(o) } : o));
   // The built-in "Other…" replaces any list entry literally called "other".
   if (other) opts = opts.filter((o) => o.value !== "other");
 
@@ -61,7 +64,7 @@ export function Select({
           className="input"
           placeholder={otherPlaceholder}
           defaultValue={isCustom ? initial : ""}
-          aria-label={`${otherLabel.replace("…", "")} (type your own)`}
+          aria-label={t("common.otherTypeOwn")}
           autoFocus={!isCustom}
           maxLength={otherType === "text" ? 60 : undefined}
         />

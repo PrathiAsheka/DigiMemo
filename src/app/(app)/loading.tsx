@@ -1,8 +1,11 @@
+import { getT } from "@/i18n/server";
+
 // Skeleton shown while a signed-in page loads.
-export default function Loading() {
+export default async function Loading() {
+  const t = await getT();
   const bar = "animate-pulse rounded-lg bg-surface-2";
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading">
+    <div className="space-y-6" aria-busy="true" aria-label={t("common.loading")}>
       <div className="space-y-2">
         <div className={`${bar} h-4 w-40`} />
         <div className={`${bar} h-8 w-72`} />

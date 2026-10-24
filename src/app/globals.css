@@ -3,6 +3,7 @@
 /* Emerald green theme. Brand greens carry the header and primary actions; urgency colours stay
    red/amber so they still stand out against the green. */
 :root {
+  color-scheme: light;
   --background: #f2f8f6;
   --surface: #ffffff;
   --surface-2: #e3f4ee;
@@ -40,43 +41,44 @@
   --ill-glass: #94dcc0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #08150f;
-    --surface: #0f1f19;
-    --surface-2: #12302a;
-    --foreground: #e1f3ec;
-    --muted: #8fb0a4;
-    --border: #1d3a31;
-    --accent: #34d399;
-    --accent-strong: #6ee7b7;
-    --accent-fg: #022c22;
-    --header: #022c22;
-    --header-fg: #e1f3ec;
-    --header-muted: #6fc3a5;
-    --warn: #f0b04f;
-    --warn-bg: #2a1f0c;
-    --danger: #f27b6f;
-    --danger-bg: #2c1412;
-    --ok: #34d399;
-    --ok-bg: #0b3528;
+/* Dark theme: chosen by the user (theme toggle), stored in a cookie and applied as
+   <html data-theme="dark">. Light is the default. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #08150f;
+  --surface: #0f1f19;
+  --surface-2: #12302a;
+  --foreground: #e1f3ec;
+  --muted: #8fb0a4;
+  --border: #1d3a31;
+  --accent: #34d399;
+  --accent-strong: #6ee7b7;
+  --accent-fg: #022c22;
+  --header: #022c22;
+  --header-fg: #e1f3ec;
+  --header-muted: #6fc3a5;
+  --warn: #f0b04f;
+  --warn-bg: #2a1f0c;
+  --danger: #f27b6f;
+  --danger-bg: #2c1412;
+  --ok: #34d399;
+  --ok-bg: #0b3528;
 
-    --ill-sky: #0e2a22;
-    --ill-sun: #e8c76a;
-    --ill-cloud: #24402f;
-    --ill-ground: #0f5c45;
-    --ill-ground-2: #0c4a38;
-    --ill-wall: #d9e6dd;
-    --ill-wall-2: #a9c4b3;
-    --ill-roof: #34d399;
-    --ill-window: #f3d98b;
-    --ill-frame: #04241b;
-    --ill-door: #047857;
-    --ill-tree: #10a36f;
-    --ill-tree-2: #0b8a5c;
-    --ill-trunk: #5e4630;
-    --ill-glass: #2f7d66;
-  }
+  --ill-sky: #0e2a22;
+  --ill-sun: #e8c76a;
+  --ill-cloud: #24402f;
+  --ill-ground: #0f5c45;
+  --ill-ground-2: #0c4a38;
+  --ill-wall: #d9e6dd;
+  --ill-wall-2: #a9c4b3;
+  --ill-roof: #34d399;
+  --ill-window: #f3d98b;
+  --ill-frame: #04241b;
+  --ill-door: #047857;
+  --ill-tree: #10a36f;
+  --ill-tree-2: #0b8a5c;
+  --ill-trunk: #5e4630;
+  --ill-glass: #2f7d66;
 }
 
 @theme inline {
@@ -98,7 +100,7 @@
   --color-danger-bg: var(--danger-bg);
   --color-ok: var(--ok);
   --color-ok-bg: var(--ok-bg);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans), var(--font-sinhala), "Nirmala UI", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 

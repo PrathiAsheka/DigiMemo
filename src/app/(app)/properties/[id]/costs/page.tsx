@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { requireProperty } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { COST_CATEGORIES, label } from "@/lib/constants";
-import { formatDate, formatMoney, toDateInput } from "@/lib/format";
+import { COST_CATEGORIES } from "@/lib/constants";
+import { toDateInput } from "@/lib/format";
 import { Empty, Field, Hidden, Input, Select, Stat } from "@/components/ui";
 import { ConfirmButton } from "@/components/confirm-button";
+import { getT } from "@/i18n/server";
 import { addCost, deleteCost } from "../../actions";
 
 export default async function CostsPage({ params }: PageProps<"/properties/[id]/costs">) {
   const { id } = await params;
-  const { property } = await requireProperty(id);
+  const [{ property }, t] = await Promise.all([requireProperty(id), getT()]);
 
   const [costs, assets] = await Promise.all([
     db.costRecord.findMany({
@@ -36,31 +37,40 @@ export default async function CostsPage({ params }: PageProps<"/properties/[id]/
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label={`Maintenance & repairs ${year}`} value={formatMoney(maintenanceThisYear)} hint="Excludes purchases" />
-        <Stat label={`All spend ${year}`} value={formatMoney(sum(thisYear))} />
-        <Stat label="All-time tracked" value={formatMoney(sum(costs))} hint={`${costs.length} records`} />
+        <Stat label={t("costs.maintenanceYear", { year })} value={t.money(maintenanceThisYear)} hint={t("costs.excludesPurchases")} />
+        <Stat label={t("costs.allSpendYear", { year })} value={t.money(sum(thisYear))} />
+        <Stat label={t("costs.allTime")} value={t.money(sum(costs))} hint={t("costs.records", { count: costs.length })} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section className="card">
+        <section className="card overflow-x-auto">
           {costs.length === 0 ? (
-            <Empty>No costs recorded yet. Costs are added automatically when you record a service or purchase.</Empty>
+            <Empty>{t("costs.empty")}</Empty>
           ) : (
             <table className="table">
-              <thead><tr><th>Date</th><th>Description</th><th>Asset</th><th>Category</th><th className="text-right">Amount</th><th /></tr></thead>
+              <thead>
+                <tr>
+                  <th>{t("common.date")}</th>
+                  <th>{t("common.description")}</th>
+                  <th>{t("common.equipment")}</th>
+                  <th>{t("common.category")}</th>
+                  <th className="text-right">{t("common.amount")}</th>
+                  <th />
+                </tr>
+              </thead>
               <tbody>
                 {costs.map((c) => (
                   <tr key={c.id}>
-                    <td className="whitespace-nowrap">{formatDate(c.date)}</td>
+                    <td className="whitespace-nowrap">{t.date(c.date)}</td>
                     <td>{c.description ?? "—"}</td>
                     <td>{c.asset ? <Link className="hover:underline" href={`/properties/${property.id}/assets/${c.asset.id}`}>{c.asset.name}</Link> : "—"}</td>
-                    <td>{label(c.category)}</td>
-                    <td className="text-right tabular-nums">{formatMoney(c.amount, c.currency)}</td>
+                    <td>{t.label(c.category)}</td>
+                    <td className="text-right tabular-nums">{t.money(c.amount, c.currency)}</td>
                     <td className="text-right">
                       <form action={deleteCost}>
                         <Hidden name="propertyId" value={property.id} />
                         <Hidden name="costId" value={c.id} />
-                        <ConfirmButton message="Delete this cost record?">×</ConfirmButton>
+                        <ConfirmButton message={t("costs.deleteConfirm")}>×</ConfirmButton>
                       </form>
                     </td>
                   </tr>
@@ -73,28 +83,35 @@ export default async function CostsPage({ params }: PageProps<"/properties/[id]/
         <aside className="space-y-4">
           {topAssets.length > 0 && (
             <div className="card">
-              <h2 className="h2 mb-3">Highest upkeep</h2>
+              <h2 className="h2 mb-3">{t("costs.highestUpkeep")}</h2>
               <ul className="space-y-2 text-sm">
                 {topAssets.map(([assetId, a]) => (
                   <li key={assetId} className="flex justify-between gap-2">
                     <span>{a.name}</span>
-                    <span className="tabular-nums text-muted">{formatMoney(a.total)}</span>
+                    <span className="tabular-nums text-muted">{t.money(a.total)}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
           <form action={addCost} className="card space-y-3">
-            <h2 className="h2">Add a cost</h2>
+            <h2 className="h2">{t("costs.addTitle")}</h2>
             <Hidden name="propertyId" value={property.id} />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Date" name="date"><Input name="date" type="date" defaultValue={toDateInput(new Date())} /></Field>
-              <Field label="Amount (USD)" name="amount"><Input name="amount" type="number" step="0.01" min={0} required /></Field>
+              <Field label={t("common.date")} name="date"><Input name="date" type="date" defaultValue={toDateInput(new Date())} /></Field>
+              <Field label={t("common.amountUsd")} name="amount"><Input name="amount" type="number" step="0.01" min={0} required /></Field>
             </div>
-            <Field label="Category" name="category"><Select name="category" options={COST_CATEGORIES} defaultValue="repair" /></Field>
-            <Field label="Asset" name="assetId"><Select name="assetId" emptyLabel="— Whole property" options={assets.map((a) => ({ value: a.id, label: a.name }))} otherPlaceholder="New equipment name" /></Field>
-            <Field label="Description" name="description"><Input name="description" /></Field>
-            <button className="btn w-full">Add cost</button>
+            <Field label={t("common.category")} name="category"><Select name="category" options={COST_CATEGORIES} defaultValue="repair" /></Field>
+            <Field label={t("common.equipment")} name="assetId">
+              <Select
+                name="assetId"
+                emptyLabel={t("common.wholePropertyOption")}
+                options={assets.map((a) => ({ value: a.id, label: a.name }))}
+                otherPlaceholder={t("common.newEquipmentName")}
+              />
+            </Field>
+            <Field label={t("common.description")} name="description"><Input name="description" /></Field>
+            <button className="btn w-full">{t("costs.addButton")}</button>
           </form>
         </aside>
       </div>

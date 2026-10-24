@@ -2,26 +2,33 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { allProfiles } from "@/lib/profiles";
 import { PlacePhoto } from "@/components/photos";
+import { LanguageSwitcher, ThemeToggle } from "@/components/preferences";
+import { getT, getTheme } from "@/i18n/server";
 import { chooseUseCase } from "./actions";
 
-export const metadata = { title: "Welcome · DigiMemo" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: `${t("welcome.metaTitle")} · DigiMemo` };
+}
 
 export default async function WelcomePage() {
-  const user = await requireUser();
+  const [user, t, theme] = await Promise.all([requireUser(), getT(), getTheme()]);
   const changing = user.useCase != null;
 
   return (
     <main className="flex flex-1 flex-col bg-background">
-      <div className="bg-header px-4 pb-24 pt-10 text-center text-header-fg">
-        <p className="text-sm text-header-muted">{changing ? "Change what you manage" : `Welcome, ${user.name.split(" ")[0]}`}</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">What will you look after?</h1>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-header-muted">
-          We&apos;ll set up rooms, suggested equipment, and maintenance tasks to suit it. You can change this later.
-        </p>
+      <div className="relative bg-header px-4 pb-24 pt-10 text-center text-header-fg">
+        <div className="absolute right-4 top-4 flex items-center gap-2">
+          <LanguageSwitcher />
+          <ThemeToggle initial={theme} />
+        </div>
+        <p className="text-sm text-header-muted">{changing ? t("welcome.changing") : t("welcome.greeting", { name: user.name.split(" ")[0] })}</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t("welcome.title")}</h1>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-header-muted">{t("welcome.intro")}</p>
       </div>
 
       <form action={chooseUseCase} className="mx-auto -mt-16 grid w-full max-w-5xl gap-4 px-4 pb-12 sm:grid-cols-2 lg:grid-cols-4">
-        {allProfiles().map((p) => {
+        {allProfiles(t.locale).map((p) => {
           const selected = user.useCase === p.id;
           return (
             <button
@@ -41,11 +48,11 @@ export default async function WelcomePage() {
               <div className="flex flex-1 flex-col gap-1 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">{p.choiceTitle}</span>
-                  {selected && <span className="badge bg-ok-bg text-ok">Current</span>}
+                  {selected && <span className="badge bg-ok-bg text-ok">{t("welcome.current")}</span>}
                 </div>
                 <span className="text-sm text-muted">{p.choiceDescription}</span>
                 <span className="mt-auto pt-3 text-sm font-medium text-accent group-hover:underline">
-                  {selected ? "Keep this" : "Choose"} →
+                  {selected ? t("welcome.keep") : t("welcome.choose")} →
                 </span>
               </div>
             </button>
@@ -55,7 +62,7 @@ export default async function WelcomePage() {
 
       {changing && (
         <p className="pb-10 text-center text-sm">
-          <Link href="/dashboard" className="btn-link">Back to dashboard</Link>
+          <Link href="/dashboard" className="btn-link">{t("welcome.backToDashboard")}</Link>
         </p>
       )}
     </main>

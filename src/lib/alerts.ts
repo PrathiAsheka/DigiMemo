@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "./db";
-import { addDays, ageInYears, daysUntil, formatDate, startOfDayUTC } from "./format";
-import { label } from "./constants";
+import { addDays, ageInYears, daysUntil, startOfDayUTC } from "./format";
+import { asLocale } from "@/i18n/config";
+import { createTranslator } from "@/i18n/translator";
 
 // Alerts are derived from the property record. Each condition has a stable `key`, so an
 // alert is raised once (keeping its read/snoozed/dismissed state), updated while the
@@ -22,13 +23,15 @@ type Desired = {
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const days = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
 
+/** Builds the alerts that should exist now, written in the user's language. */
 async function desiredAlerts(userId: string): Promise<Desired[]> {
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { remindTaskDays: true, remindWarrantyDays: true, remindLifeMonths: true },
+    select: { remindTaskDays: true, remindWarrantyDays: true, remindLifeMonths: true, locale: true },
   });
+  const t = createTranslator(asLocale(user.locale));
+  const days = (count: number) => t("time.days", { count });
   const today = startOfDayUTC(new Date());
   const owned = { property: { ownerId: userId } };
   const multi = (await db.property.count({ where: { ownerId: userId } })) > 1;
@@ -63,35 +66,46 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
 
   const out: Desired[] = [];
 
-  for (const t of tasks) {
-    const d = daysUntil(t.nextDueDate);
+  for (const task of tasks) {
+    const d = daysUntil(task.nextDueDate);
+    const where = at(task.property.name, task.asset?.name) || t("common.wholeProperty");
+    const date = t.date(task.nextDueDate);
     out.push({
-      key: `task:${t.id}:${iso(t.nextDueDate)}`,
+      key: `task:${task.id}:${iso(task.nextDueDate)}`,
       kind: "maintenance",
       severity: d < 0 ? "critical" : d <= 2 ? "warning" : "info",
-      title: d < 0 ? `${t.title} is overdue` : d === 0 ? `${t.title} is due today` : `${t.title} is due in ${days(d)}`,
-      message: `${at(t.property.name, t.asset?.name) || "Whole property"} · due ${formatDate(t.nextDueDate)}${d < 0 ? ` (${days(-d)} late)` : ""}`,
-      href: `/properties/${t.property.id}/maintenance`,
-      propertyId: t.property.id,
-      dueAt: t.nextDueDate,
+      title:
+        d < 0
+          ? t("alertText.taskOverdue", { title: task.title })
+          : d === 0
+            ? t("alertText.taskToday", { title: task.title })
+            : t("alertText.taskSoon", { title: task.title, days: days(d) }),
+      message: d < 0 ? t("alertText.taskLateMessage", { where, date, days: days(-d) }) : t("alertText.taskMessage", { where, date }),
+      href: `/properties/${task.property.id}/maintenance`,
+      propertyId: task.property.id,
+      dueAt: task.nextDueDate,
     });
   }
 
   for (const w of warranties) {
     const d = daysUntil(w.endDate);
     const what = /contract/i.test(`${w.provider ?? ""} ${w.terms ?? ""}`) ? "contract" : "warranty";
+    const name = w.asset.name;
+    const date = t.date(w.endDate);
     out.push({
       key: `warranty:${w.id}:${iso(w.endDate)}`,
       kind: what,
       severity: d < 0 ? "info" : d <= 7 ? "warning" : "info",
       title:
         d < 0
-          ? `${w.asset.name} ${what} has ended`
-          : `${w.asset.name} ${what} ends ${d === 0 ? "today" : `in ${days(d)}`}`,
+          ? t(`alertText.${what}Ended`, { name })
+          : d === 0
+            ? t(`alertText.${what}EndsToday`, { name })
+            : t(`alertText.${what}EndsIn`, { name, days: days(d) }),
       message:
         d < 0
-          ? `Ended ${formatDate(w.endDate)}. Renew it or note that it's out of cover.`
-          : `${[w.provider, w.terms].filter(Boolean).join(": ") || "Coverage"}. Ends ${formatDate(w.endDate)}; report any faults or renew before then.`,
+          ? t("alertText.coverEndedMessage", { date })
+          : t("alertText.coverMessage", { cover: [w.provider, w.terms].filter(Boolean).join(": ") || t("alertText.coverage"), date }),
       href: `/properties/${w.asset.property.id}/assets/${w.asset.id}`,
       propertyId: w.asset.property.id,
       dueAt: w.endDate,
@@ -105,8 +119,8 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
         key: `asset:${a.id}:${a.status}`,
         kind: "asset",
         severity: a.status === "out_of_service" ? "critical" : "warning",
-        title: `${a.name}: ${label(a.status).toLowerCase()}`,
-        message: `${at(a.property.name) || a.property.name} · create a work order or update its status once fixed.`,
+        title: t("alertText.assetStatus", { name: a.name, status: t.label(a.status) }),
+        message: t("alertText.assetStatusMessage", { where: at(a.property.name) || a.property.name }),
         href,
         propertyId: a.property.id,
         dueAt: null,
@@ -120,11 +134,11 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
           key: `life:${a.id}:${a.expectedLifeYears}`,
           kind: "lifecycle",
           severity: yearsLeft <= 0 ? "warning" : "info",
-          title: yearsLeft <= 0 ? `${a.name} is past its expected life` : `${a.name} is nearing replacement age`,
+          title: yearsLeft <= 0 ? t("alertText.pastLife", { name: a.name }) : t("alertText.nearLife", { name: a.name }),
           message:
             yearsLeft <= 0
-              ? `Expected life was ${a.expectedLifeYears} years. Start getting quotes before it fails.`
-              : `About ${Math.max(1, Math.round(yearsLeft * 12))} months of expected life left. Budget for a replacement.`,
+              ? t("alertText.pastLifeMessage", { years: a.expectedLifeYears })
+              : t("alertText.nearLifeMessage", { count: Math.max(1, Math.round(yearsLeft * 12)) }),
           href,
           propertyId: a.property.id,
           dueAt: null,
@@ -134,14 +148,14 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
   }
 
   for (const o of orders) {
-    const where = at(o.property.name, o.asset?.name);
+    const where = at(o.property.name, o.asset?.name) || o.property.name;
     if (o.priority === "urgent" || o.priority === "high") {
       out.push({
         key: `wo:${o.id}:${o.priority}`,
         kind: "work_order",
         severity: o.priority === "urgent" ? "critical" : "warning",
-        title: `${label(o.priority)} priority: ${o.title}`,
-        message: `${where || o.property.name} · ${o.providerId ? label(o.status) : "no one assigned yet"}`,
+        title: t("alertText.priorityOrder", { priority: t.label(o.priority), title: o.title }),
+        message: `${where} · ${o.providerId ? t.label(o.status) : t("alertText.noOneAssigned")}`,
         href: `/properties/${o.property.id}/work-orders`,
         propertyId: o.property.id,
         dueAt: null,
@@ -154,8 +168,13 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
           key: `visit:${o.id}:${iso(o.scheduledFor)}`,
           kind: "work_order",
           severity: "info",
-          title: `${o.title} is scheduled ${d === 0 ? "today" : d === 1 ? "tomorrow" : `in ${days(d)}`}`,
-          message: `${where || o.property.name} · make sure someone can let them in.`,
+          title:
+            d === 0
+              ? t("alertText.visitToday", { title: o.title })
+              : d === 1
+                ? t("alertText.visitTomorrow", { title: o.title })
+                : t("alertText.visitIn", { title: o.title, days: days(d) }),
+          message: t("alertText.visitMessage", { where }),
           href: `/properties/${o.property.id}/work-orders`,
           propertyId: o.property.id,
           dueAt: o.scheduledFor,
@@ -169,8 +188,8 @@ async function desiredAlerts(userId: string): Promise<Desired[]> {
       key: `doc:${doc.id}`,
       kind: "document",
       severity: "info",
-      title: `Check what AI read from ${doc.filename}`,
-      message: `${doc.property.name} · nothing is saved until you confirm.`,
+      title: t("alertText.reviewDoc", { name: doc.filename }),
+      message: t("alertText.reviewDocMessage", { where: doc.property.name }),
       href: `/properties/${doc.property.id}/documents/${doc.id}`,
       propertyId: doc.property.id,
       dueAt: null,

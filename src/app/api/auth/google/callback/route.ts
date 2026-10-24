@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { getLocale } from "@/i18n/server";
+import { LOCALE_COOKIE } from "@/i18n/config";
 import { finishGoogleSignIn, GOOGLE_COOKIE, googleConfigured, type GoogleProfile } from "@/lib/google";
 
 // Step 2: Google sends the user back here with ?code&state.
@@ -36,10 +38,12 @@ export async function GET(req: NextRequest) {
       if (!profile.emailVerified) redirect("/login?error=google_unverified");
       user = await db.user.update({ where: { id: byEmail.id }, data: { googleId: profile.sub } });
     } else {
-      user = await db.user.create({ data: { email: profile.email, name: profile.name, googleId: profile.sub } });
+      user = await db.user.create({ data: { email: profile.email, name: profile.name, googleId: profile.sub, locale: await getLocale() } });
     }
   }
 
   await createSession(user.id);
+  // Use the account's saved language on this device too.
+  jar.set(LOCALE_COOKIE, user.locale, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   redirect(user.useCase ? "/dashboard" : "/welcome");
 }

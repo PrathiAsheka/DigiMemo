@@ -12,6 +12,7 @@ import { deleteStoredFile, saveFile } from "@/lib/storage";
 import { canExtract } from "@/lib/ai/extract";
 import { aiConfigured } from "@/lib/ai/client";
 import { resolveAssetId, resolveSpaceId } from "@/lib/form-entities";
+import { getT } from "@/i18n/server";
 
 export type UploadState = { error?: string } | undefined;
 
@@ -20,10 +21,11 @@ export async function uploadDocument(_prev: UploadState, form: FormData): Promis
   const propertyId = required(form, "propertyId");
   await assertOwnsProperty(user.id, propertyId);
 
+  const t = await getT();
   const file = form.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload" };
-  if (file.size > MAX_UPLOAD_BYTES) return { error: "Files must be 15 MB or smaller" };
-  if (!ACCEPTED_TYPES.includes(file.type)) return { error: "Upload a PDF, image (JPEG, PNG, WebP, GIF) or text file" };
+  if (!(file instanceof File) || file.size === 0) return { error: t("documents.errNone") };
+  if (file.size > MAX_UPLOAD_BYTES) return { error: t("documents.errSize") };
+  if (!ACCEPTED_TYPES.includes(file.type)) return { error: t("documents.errType") };
 
   const assetId = await resolveAssetId(form, "assetId", propertyId);
 

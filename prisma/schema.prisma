@@ -20,6 +20,8 @@ model User {
   // What the user manages: home | apartment | company | other. Null until they
   // pick on /welcome; drives wording, defaults and suggestions (src/lib/profiles.ts).
   useCase      String?
+  // Interface language: "en" (default) or "si". Alerts are generated in this language.
+  locale       String   @default("en")
   createdAt    DateTime @default(now())
 
   // Reminder lead times (days before the date an alert is raised).

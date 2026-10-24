@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { label } from "@/lib/constants";
-import { capitalize, getProfile, illustrationForPropertyType } from "@/lib/profiles";
+import { getProfile, illustrationForPropertyType } from "@/lib/profiles";
 import { Empty, PageHeader } from "@/components/ui";
 import { PlacePhoto } from "@/components/photos";
+import { getT } from "@/i18n/server";
 
 export default async function PropertiesPage() {
-  const user = await requireUser();
-  const profile = getProfile(user.useCase);
+  const [user, t] = await Promise.all([requireUser(), getT()]);
+  const profile = getProfile(user.useCase, t.locale);
   const properties = await db.property.findMany({
     where: { ownerId: user.id },
     orderBy: { createdAt: "asc" },
@@ -17,12 +17,12 @@ export default async function PropertiesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={capitalize(profile.nounPlural)} description={profile.propertiesDescription}>
-        <Link href="/properties/new" className="btn">Add {profile.noun}</Link>
+      <PageHeader title={profile.pluralTitle} description={profile.propertiesDescription}>
+        <Link href="/properties/new" className="btn">{t("properties.add", { noun: profile.noun })}</Link>
       </PageHeader>
       {properties.length === 0 ? (
         <div className="card">
-          <Empty>No {profile.nounPlural} yet. Add your first one to start building its digital twin.</Empty>
+          <Empty>{t("properties.empty", { nouns: profile.nounPlural })}</Empty>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -40,13 +40,13 @@ export default async function PropertiesPage() {
               <div className="p-4">
                 <div className="font-medium">{p.name}</div>
                 <div className="mt-0.5 text-sm text-muted">
-                  {label(p.type)}
+                  {t.label(p.type)}
                   {p.address ? ` · ${p.address}` : ""}
                 </div>
-                <div className="mt-3 flex gap-4 text-xs text-muted">
-                  <span>{p._count.spaces} spaces</span>
-                  <span>{p._count.assets} assets</span>
-                  <span>{p._count.documents} documents</span>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                  <span>{t("properties.spaces", { count: p._count.spaces })}</span>
+                  <span>{t("properties.assets", { count: p._count.assets })}</span>
+                  <span>{t("properties.documents", { count: p._count.documents })}</span>
                 </div>
               </div>
             </Link>

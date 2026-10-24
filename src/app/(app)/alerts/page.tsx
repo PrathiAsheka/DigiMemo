@@ -3,9 +3,10 @@ import type { Alert } from "@prisma/client";
 import { activeAlertsWhere, syncAlerts } from "@/lib/alerts";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/format";
 import { Field, Hidden, PageHeader, Select } from "@/components/ui";
 import { NotificationSettings } from "@/components/alert-notifier";
+import { getT } from "@/i18n/server";
+import type { Translator } from "@/i18n/translator";
 import {
   dismissAlert,
   markAlertRead,
@@ -25,30 +26,25 @@ const KIND_ICON: Record<string, string> = {
   document: "📎",
 };
 
-const KIND_LABEL: Record<string, string> = {
-  maintenance: "Maintenance",
-  warranty: "Warranty",
-  contract: "Contract",
-  lifecycle: "Replacement",
-  work_order: "Work order",
-  asset: "Equipment",
-  document: "Document",
-};
+const KINDS = ["maintenance", "warranty", "contract", "lifecycle", "work_order", "asset", "document"] as const;
+type Kind = (typeof KINDS)[number];
+const isKind = (k: string): k is Kind => (KINDS as readonly string[]).includes(k);
+const kindLabel = (t: Translator, k: string) => (isKind(k) ? t(`alerts.kind_${k}`) : k);
 
 const GROUPS = [
-  { severity: "critical", title: "Act now", tone: "border-danger/40", head: "bg-danger-bg text-danger", dot: "bg-danger" },
-  { severity: "warning", title: "Coming up", tone: "border-warn/40", head: "bg-warn-bg text-warn", dot: "bg-warn" },
-  { severity: "info", title: "For your information", tone: "border-border", head: "bg-surface-2 text-foreground", dot: "bg-accent" },
+  { severity: "critical", title: "alerts.actNow", tone: "border-danger/40", head: "bg-danger-bg text-danger", dot: "bg-danger" },
+  { severity: "warning", title: "alerts.comingUp", tone: "border-warn/40", head: "bg-warn-bg text-warn", dot: "bg-warn" },
+  { severity: "info", title: "alerts.fyi", tone: "border-border", head: "bg-surface-2 text-foreground", dot: "bg-accent" },
 ] as const;
 
-const DAY_CHOICES = (values: number[], unit: string) => values.map((v) => ({ value: String(v), label: `${v} ${unit}` }));
+const choices = (values: number[], label: (v: number) => string) => values.map((v) => ({ value: String(v), label: label(v) }));
 
 export default async function AlertsPage({ searchParams }: PageProps<"/alerts">) {
-  const user = await requireUser();
+  const [user, t] = await Promise.all([requireUser(), getT()]);
   await syncAlerts(user.id, { force: true });
   const { show, kind } = await searchParams;
   const unreadOnly = show === "unread";
-  const kindFilter = typeof kind === "string" && kind in KIND_LABEL ? kind : null;
+  const kindFilter = typeof kind === "string" && isKind(kind) ? kind : null;
 
   const [alerts, hidden, settings, kinds] = await Promise.all([
     db.alert.findMany({
@@ -83,12 +79,12 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Alerts"
-        description="Reminders raised from your records: maintenance due, warranties and contracts ending, ageing equipment and urgent jobs. They clear themselves once dealt with."
+        title={t("nav.alerts")}
+        description={t("alerts.description")}
       >
         {unreadCount > 0 && (
           <form action={markAllAlertsRead}>
-            <button className="btn-secondary">Mark all as read</button>
+            <button className="btn-secondary">{t("alerts.markAllRead")}</button>
           </form>
         )}
       </PageHeader>
@@ -96,13 +92,13 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Link href={filterHref({ show: null })} className={chip(!unreadOnly)}>All</Link>
-            <Link href={filterHref({ show: "unread" })} className={chip(unreadOnly)}>Unread</Link>
+            <Link href={filterHref({ show: null })} className={chip(!unreadOnly)}>{t("alerts.all")}</Link>
+            <Link href={filterHref({ show: "unread" })} className={chip(unreadOnly)}>{t("alerts.unread")}</Link>
             <span className="mx-1 w-px bg-border" />
-            <Link href={filterHref({ kind: null })} className={chip(!kindFilter)}>Every type</Link>
+            <Link href={filterHref({ kind: null })} className={chip(!kindFilter)}>{t("alerts.everyType")}</Link>
             {kinds.map((k) => (
               <Link key={k.kind} href={filterHref({ kind: k.kind })} className={chip(kindFilter === k.kind)}>
-                {KIND_LABEL[k.kind] ?? k.kind} ({k._count})
+                {kindLabel(t, k.kind)} ({k._count})
               </Link>
             ))}
           </div>
@@ -111,8 +107,8 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
             <section className="flex items-center gap-4 rounded-xl border border-ok/30 bg-ok-bg p-5">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ok text-accent-fg" aria-hidden="true">✓</span>
               <div>
-                <h2 className="h2 text-ok">{unreadOnly || kindFilter ? "Nothing here" : "No alerts"}</h2>
-                <p className="text-sm text-muted">You&apos;re up to date. New reminders appear here and on the bell at the top.</p>
+                <h2 className="h2 text-ok">{unreadOnly || kindFilter ? t("alerts.nothingHere") : t("alerts.none")}</h2>
+                <p className="text-sm text-muted">{t("alerts.upToDate")}</p>
               </div>
             </section>
           ) : (
@@ -122,10 +118,10 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
               return (
                 <section key={g.severity} className={`overflow-hidden rounded-xl border bg-surface ${g.tone}`}>
                   <h2 className={`px-5 py-2.5 text-sm font-semibold ${g.head}`}>
-                    {g.title} ({list.length})
+                    {t(g.title)} ({list.length})
                   </h2>
                   <ul className="divide-y divide-border">
-                    {list.map((a) => <AlertRow key={a.id} alert={a} dot={g.dot} />)}
+                    {list.map((a) => <AlertRow key={a.id} t={t} alert={a} dot={g.dot} />)}
                   </ul>
                 </section>
               );
@@ -134,17 +130,17 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
 
           {hidden.length > 0 && (
             <details className="card">
-              <summary className="cursor-pointer text-sm font-medium">Snoozed and dismissed ({hidden.length})</summary>
+              <summary className="cursor-pointer text-sm font-medium">{t("alerts.hidden", { count: hidden.length })}</summary>
               <ul className="mt-3 divide-y divide-border">
                 {hidden.map((a) => (
                   <li key={a.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
                     <span className="text-muted">{a.title}</span>
                     <span className="text-xs text-muted">
-                      {a.dismissedAt ? "dismissed" : `snoozed until ${formatDate(a.snoozedTill)}`}
+                      {a.dismissedAt ? t("alerts.dismissed") : t("alerts.snoozedUntil", { date: t.date(a.snoozedTill) })}
                     </span>
                     <form action={restoreAlert} className="ml-auto">
                       <Hidden name="alertId" value={a.id} />
-                      <button className="btn-link">Restore</button>
+                      <button className="btn-link">{t("alerts.restore")}</button>
                     </form>
                   </li>
                 ))}
@@ -159,40 +155,40 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
           </div>
           <form action={updateReminderSettings} className="card space-y-3">
             <div>
-              <h2 className="h2">When to remind me</h2>
-              <p className="text-xs text-muted">How far ahead each alert appears.</p>
+              <h2 className="h2">{t("alerts.whenTitle")}</h2>
+              <p className="text-xs text-muted">{t("alerts.whenHint")}</p>
             </div>
-            <Field label="Maintenance tasks" name="remindTaskDays">
+            <Field label={t("alerts.remindTasks")} name="remindTaskDays">
               <Select
                 name="remindTaskDays"
-                options={DAY_CHOICES([1, 3, 7, 14, 30], "days before")}
+                options={choices([1, 3, 7, 14, 30], (v) => t("alerts.daysBefore", { count: v }))}
                 defaultValue={String(settings.remindTaskDays)}
                 otherType="number"
-                otherPlaceholder="Days before"
+                otherPlaceholder={t("alerts.daysBeforePlaceholder")}
               />
             </Field>
-            <Field label="Warranties and contracts" name="remindWarrantyDays">
+            <Field label={t("alerts.remindWarranties")} name="remindWarrantyDays">
               <Select
                 name="remindWarrantyDays"
-                options={DAY_CHOICES([7, 14, 30, 60, 90], "days before")}
+                options={choices([7, 14, 30, 60, 90], (v) => t("alerts.daysBefore", { count: v }))}
                 defaultValue={String(settings.remindWarrantyDays)}
                 otherType="number"
-                otherPlaceholder="Days before"
+                otherPlaceholder={t("alerts.daysBeforePlaceholder")}
               />
             </Field>
-            <Field label="Replacement age" name="remindLifeMonths">
+            <Field label={t("alerts.remindLife")} name="remindLifeMonths">
               <Select
                 name="remindLifeMonths"
-                options={DAY_CHOICES([3, 6, 12, 24], "months before")}
+                options={choices([3, 6, 12, 24], (v) => t("alerts.monthsBefore", { count: v }))}
                 defaultValue={String(settings.remindLifeMonths)}
                 otherType="number"
-                otherPlaceholder="Months before"
+                otherPlaceholder={t("alerts.monthsBeforePlaceholder")}
               />
             </Field>
-            <button className="btn w-full">Save reminders</button>
+            <button className="btn w-full">{t("alerts.saveReminders")}</button>
           </form>
           <div className="card text-xs text-muted">
-            Alerts show on the bell at the top of every page, and as device notifications if you turn them on. Notifications appear while the app is open in a browser tab; email reminders are planned for a later version.
+            {t("alerts.footnote")}
           </div>
         </aside>
       </div>
@@ -200,34 +196,34 @@ export default async function AlertsPage({ searchParams }: PageProps<"/alerts">)
   );
 }
 
-function AlertRow({ alert: a, dot }: { alert: Alert; dot: string }) {
+function AlertRow({ t, alert: a, dot }: { t: Translator; alert: Alert; dot: string }) {
   return (
     <li className={`flex flex-wrap items-start gap-x-4 gap-y-2 px-5 py-3 ${a.readAt ? "" : "bg-surface-2/40"}`}>
       <span className="mt-0.5 text-lg leading-none" aria-hidden="true">{KIND_ICON[a.kind] ?? "•"}</span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2">
-          {!a.readAt && <span className={`h-2 w-2 rounded-full ${dot}`} aria-label="Unread" />}
+          {!a.readAt && <span className={`h-2 w-2 rounded-full ${dot}`} aria-label={t("alerts.unread")} />}
           <Link href={a.href} className={`hover:underline ${a.readAt ? "" : "font-semibold"}`}>{a.title}</Link>
         </div>
         <p className="text-sm text-muted">{a.message}</p>
         <p className="mt-0.5 text-xs text-muted">
-          {KIND_LABEL[a.kind] ?? a.kind} · raised {formatDate(a.createdAt)}
+          {kindLabel(t, a.kind)} · {t("alerts.raised", { date: t.date(a.createdAt) })}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3 text-sm">
-        <Link href={a.href} className="btn-secondary py-1.5">Open</Link>
+        <Link href={a.href} className="btn-secondary py-1.5">{t("common.open")}</Link>
         <form action={markAlertRead}>
           <Hidden name="alertId" value={a.id} />
-          <button className="btn-link">{a.readAt ? "Mark unread" : "Mark read"}</button>
+          <button className="btn-link">{a.readAt ? t("alerts.markUnread") : t("alerts.markRead")}</button>
         </form>
         <form action={snoozeAlert}>
           <Hidden name="alertId" value={a.id} />
           <Hidden name="days" value="7" />
-          <button className="btn-link" title="Hide for a week">Snooze</button>
+          <button className="btn-link" title={t("alerts.snoozeHint")}>{t("alerts.snooze")}</button>
         </form>
         <form action={dismissAlert}>
           <Hidden name="alertId" value={a.id} />
-          <button className="text-sm text-muted hover:text-danger" title="Dismiss">✕</button>
+          <button className="text-sm text-muted hover:text-danger" title={t("alerts.dismiss")} aria-label={t("alerts.dismiss")}>✕</button>
         </form>
       </div>
     </li>

@@ -29,9 +29,3 @@ export const COST_CATEGORIES = ["purchase", "service", "repair", "replacement", 
 
 /** Categories where only a qualified professional should do the work (proposal §6). */
 export const SAFETY_CRITICAL_CATEGORIES = new Set(["electrical", "structure", "hvac", "solar"]);
-
-const LABELS: Record<string, string> = { hvac: "HVAC" };
-
-export function label(value: string) {
-  return LABELS[value] ?? value.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
-}

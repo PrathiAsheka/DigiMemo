@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useRef } from "react";
+import { useT } from "@/i18n/client";
 import { uploadAssetPhotos, type PhotoState } from "../../../photo-actions";
 
-const CAPTIONS = ["Front view", "Model / serial label", "Installed position", "Receipt", "Damage", "Spare part"];
+const CAPTIONS = ["captionFront", "captionLabel", "captionInstalled", "captionReceipt", "captionDamage", "captionSpare"] as const;
 
 export function PhotoUpload({ propertyId, assetId, aiEnabled }: { propertyId: string; assetId: string; aiEnabled: boolean }) {
+  const t = useT();
   const [state, action, pending] = useActionState<PhotoState, FormData>(async (prev, form) => {
     const result = await uploadAssetPhotos(prev, form);
     if (result?.added) formRef.current?.reset();
@@ -18,7 +20,7 @@ export function PhotoUpload({ propertyId, assetId, aiEnabled }: { propertyId: st
       <input type="hidden" name="propertyId" value={propertyId} />
       <input type="hidden" name="assetId" value={assetId} />
       <div>
-        <label htmlFor="photos" className="field-label">Add photos</label>
+        <label htmlFor="photos" className="field-label">{t("photos.add")}</label>
         {/* capture opens the camera on phones; desktops get the normal file picker */}
         <input
           id="photos"
@@ -32,24 +34,24 @@ export function PhotoUpload({ propertyId, assetId, aiEnabled }: { propertyId: st
         />
       </div>
       <div>
-        <label htmlFor="caption" className="field-label">What does it show? (optional)</label>
-        <input id="caption" name="caption" list="photo-captions" maxLength={80} className="input" placeholder="e.g. Model / serial label" />
+        <label htmlFor="caption" className="field-label">{t("photos.captionLabelField")}</label>
+        <input id="caption" name="caption" list="photo-captions" maxLength={80} className="input" placeholder={t("photos.captionPlaceholder")} />
         <datalist id="photo-captions">
-          {CAPTIONS.map((c) => <option key={c} value={c} />)}
+          {CAPTIONS.map((c) => <option key={c} value={t(`photos.${c}`)} />)}
         </datalist>
       </div>
       {aiEnabled && (
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="readLabel" className="mt-0.5" />
           <span>
-            Read the label with AI
-            <span className="block text-xs text-muted">For a single photo of the rating plate: fills in model, serial and dates for you to check.</span>
+            {t("photos.readLabel")}
+            <span className="block text-xs text-muted">{t("photos.readLabelHint")}</span>
           </span>
         </label>
       )}
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-      {state?.added && <p className="text-sm text-ok">Added {state.added} photo{state.added === 1 ? "" : "s"}.</p>}
-      <button className="btn w-full" disabled={pending}>{pending ? "Uploading…" : "Save photos"}</button>
+      {state?.added && <p className="text-sm text-ok">{t("photos.added", { count: state.added })}</p>}
+      <button className="btn w-full" disabled={pending}>{pending ? t("photos.uploading") : t("photos.save")}</button>
     </form>
   );
 }

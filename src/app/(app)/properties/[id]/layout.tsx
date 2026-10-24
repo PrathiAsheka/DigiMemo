@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { requireProperty } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { label } from "@/lib/constants";
 import { startOfDayUTC } from "@/lib/format";
 import { getProfile, illustrationForPropertyType } from "@/lib/profiles";
 import { PlacePhoto } from "@/components/photos";
+import { getT } from "@/i18n/server";
 import { PropertyTabs } from "./tabs";
 
 export default async function PropertyLayout({ children, params }: LayoutProps<"/properties/[id]">) {
   const { id } = await params;
-  const { user, property } = await requireProperty(id);
-  const profile = getProfile(user.useCase);
+  const [{ user, property }, t] = await Promise.all([requireProperty(id), getT()]);
+  const profile = getProfile(user.useCase, t.locale);
 
   const [overdue, openOrders, toReview] = await Promise.all([
     db.maintenanceTask.count({ where: { propertyId: property.id, active: true, nextDueDate: { lt: startOfDayUTC(new Date()) } } }),
@@ -28,12 +28,12 @@ export default async function PropertyLayout({ children, params }: LayoutProps<"
           eager
         />
         <div>
-          <Link href="/properties" className="text-xs text-muted hover:text-accent">← All {profile.nounPlural}</Link>
+          <Link href="/properties" className="text-xs text-muted hover:text-accent">← {t("property.allOf", { nouns: profile.nounPlural })}</Link>
           <h1 className="h1 mt-1">{property.name}</h1>
           <p className="mt-1 text-sm text-muted">
-            {label(property.type)}
+            {t.label(property.type)}
             {property.address ? ` · ${property.address}` : ""}
-            {property.yearBuilt ? ` · built ${property.yearBuilt}` : ""}
+            {property.yearBuilt ? ` · ${t("property.built", { year: property.yearBuilt })}` : ""}
           </p>
         </div>
       </div>

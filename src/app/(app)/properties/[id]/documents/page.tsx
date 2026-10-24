@@ -1,24 +1,22 @@
 import Link from "next/link";
 import { requireProperty } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { label } from "@/lib/constants";
-import { formatDate } from "@/lib/format";
 import { aiConfigured } from "@/lib/ai/client";
-import { aiSetupHint } from "@/lib/ai/provider";
 import { Badge, Empty } from "@/components/ui";
+import { getT } from "@/i18n/server";
 import { UploadForm } from "./upload-form";
 
-const EXTRACTION_BADGE: Record<string, { text: string; tone: "ok" | "warn" | "danger" | "muted" }> = {
-  pending: { text: "Analysing", tone: "muted" },
-  ready: { text: "Review AI suggestions", tone: "warn" },
-  confirmed: { text: "Confirmed", tone: "ok" },
-  failed: { text: "AI failed", tone: "danger" },
-};
+const EXTRACTION_BADGE = {
+  pending: { key: "documents.badgePending", tone: "muted" },
+  ready: { key: "documents.badgeReady", tone: "warn" },
+  confirmed: { key: "documents.badgeConfirmed", tone: "ok" },
+  failed: { key: "documents.badgeFailed", tone: "danger" },
+} as const;
 
 export default async function DocumentsPage({ params, searchParams }: PageProps<"/properties/[id]/documents">) {
   const { id } = await params;
   const { asset } = await searchParams;
-  const { property } = await requireProperty(id);
+  const [{ property }, t] = await Promise.all([requireProperty(id), getT()]);
 
   const [documents, assets] = await Promise.all([
     db.document.findMany({
@@ -33,22 +31,22 @@ export default async function DocumentsPage({ params, searchParams }: PageProps<
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="card">
         {documents.length === 0 ? (
-          <Empty>No documents yet. Upload a receipt or warranty card and AI will draft the asset record for you to confirm.</Empty>
+          <Empty>{t("documents.empty")}</Empty>
         ) : (
           <table className="table">
-            <thead><tr><th>File</th><th>Type</th><th>Asset</th><th>Added</th><th /></tr></thead>
+            <thead><tr><th>{t("documents.file")}</th><th>{t("common.type")}</th><th>{t("common.equipment")}</th><th>{t("documents.added")}</th><th /></tr></thead>
             <tbody>
               {documents.map((d) => {
-                const badge = EXTRACTION_BADGE[d.extractionStatus];
+                const badge = EXTRACTION_BADGE[d.extractionStatus as keyof typeof EXTRACTION_BADGE];
                 return (
                   <tr key={d.id}>
                     <td>
                       <Link href={`/properties/${property.id}/documents/${d.id}`} className="font-medium hover:underline">{d.filename}</Link>
                     </td>
-                    <td>{label(d.kind)}</td>
+                    <td>{t.label(d.kind)}</td>
                     <td>{d.asset ? <Link className="hover:underline" href={`/properties/${property.id}/assets/${d.asset.id}`}>{d.asset.name}</Link> : "—"}</td>
-                    <td className="whitespace-nowrap">{formatDate(d.createdAt)}</td>
-                    <td className="text-right">{badge && <Badge tone={badge.tone}>{badge.text}</Badge>}</td>
+                    <td className="whitespace-nowrap">{t.date(d.createdAt)}</td>
+                    <td className="text-right">{badge && <Badge tone={badge.tone}>{t(badge.key)}</Badge>}</td>
                   </tr>
                 );
               })}
@@ -62,7 +60,6 @@ export default async function DocumentsPage({ params, searchParams }: PageProps<
           assets={assets}
           presetAssetId={typeof asset === "string" ? asset : undefined}
           aiEnabled={aiConfigured()}
-          aiHint={aiSetupHint()}
         />
       </aside>
     </div>

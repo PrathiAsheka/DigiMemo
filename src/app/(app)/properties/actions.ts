@@ -13,7 +13,9 @@ import {
 } from "@/lib/constants";
 import { date, float, int, oneOf, required, str } from "@/lib/forms";
 import { getProfile, profileForPropertyType } from "@/lib/profiles";
-import { alreadyHas, templateForSpace, type SpaceTemplate } from "@/lib/space-templates";
+import { alreadyHas, templateForSpace, tn, type SpaceTemplate } from "@/lib/space-templates";
+import { getLocale } from "@/i18n/server";
+import type { Locale } from "@/i18n/config";
 import { deleteStoredFile } from "@/lib/storage";
 import { resolveAssetId, resolveSpaceId } from "@/lib/form-entities";
 
@@ -38,7 +40,8 @@ async function ownedAsset(form: FormData) {
 
 export async function createProperty(form: FormData) {
   const user = await requireUser();
-  const profile = getProfile(user.useCase);
+  const locale = await getLocale();
+  const profile = getProfile(user.useCase, locale);
   const type = oneOf(form, "type", PROPERTY_TYPES, profile.propertyType as (typeof PROPERTY_TYPES)[number]);
   const property = await db.property.create({
     data: {
@@ -53,8 +56,8 @@ export async function createProperty(form: FormData) {
   // Smart defaults (proposal §20): start with typical rooms so onboarding is one step shorter.
   if (form.get("seedSpaces") === "on") {
     const withAssets = form.get("seedAssets") === "on";
-    for (const t of profileForPropertyType(type, profile).spaces) {
-      await createSpaceFromTemplate(property.id, t, withAssets);
+    for (const room of profileForPropertyType(type, profile).spaces) {
+      await createSpaceFromTemplate(property.id, room, withAssets, locale);
     }
   }
   redirect(`/properties/${property.id}`);
@@ -98,14 +101,15 @@ export async function createSpace(form: FormData) {
   revalidatePath(`/properties/${propertyId}`);
 }
 
-async function createSpaceFromTemplate(propertyId: string, t: SpaceTemplate, withAssets: boolean) {
-  const space = await db.space.create({ data: { propertyId, name: t.name, kind: t.kind } });
+/** Creates a typical room (and optionally its equipment), named in the user's language. */
+async function createSpaceFromTemplate(propertyId: string, room: SpaceTemplate, withAssets: boolean, locale: Locale) {
+  const space = await db.space.create({ data: { propertyId, name: tn(room, locale), kind: room.kind } });
   if (withAssets) {
     await db.asset.createMany({
-      data: t.assets.map((x) => ({
+      data: room.assets.map((x) => ({
         propertyId,
         spaceId: space.id,
-        name: x.name,
+        name: tn(x, locale),
         category: x.category,
         expectedLifeYears: x.lifeYears,
       })),
@@ -123,9 +127,9 @@ async function templatesFor(userUseCase: string | null, propertyId: string) {
 export async function addTemplateSpace(form: FormData) {
   const { user, propertyId } = await ownedProperty(form);
   const templates = await templatesFor(user.useCase, propertyId);
-  const t = templates.find((x) => x.name === required(form, "template"));
-  if (!t) throw new Error("Unknown room type");
-  await createSpaceFromTemplate(propertyId, t, form.get("withAssets") === "on");
+  const room = templates.find((x) => x.en === required(form, "template"));
+  if (!room) throw new Error("Unknown room type");
+  await createSpaceFromTemplate(propertyId, room, form.get("withAssets") === "on", await getLocale());
   revalidatePath(`/properties/${propertyId}`);
 }
 
@@ -144,13 +148,15 @@ export async function addSuggestedAssets(form: FormData) {
   const template = templateForSpace(space.name, await templatesFor(user.useCase, propertyId));
   const wanted = new Set(form.getAll("asset").map(String));
   const have = space.assets.map((x) => x.name);
-  const toAdd = (template?.assets ?? []).filter((x) => wanted.has(x.name) && !alreadyHas(have, x.name));
+  // Form values are the catalogue's English keys; records are named in the user's language.
+  const toAdd = (template?.assets ?? []).filter((x) => wanted.has(x.en) && !alreadyHas(have, x));
+  const locale = await getLocale();
 
   await db.asset.createMany({
     data: toAdd.map((x) => ({
       propertyId,
       spaceId: space.id,
-      name: x.name,
+      name: tn(x, locale),
       category: x.category,
       expectedLifeYears: x.lifeYears,
     })),

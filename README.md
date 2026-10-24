@@ -20,6 +20,7 @@ A property intelligence and maintenance platform for homes, apartments and busin
 | Service providers | Your own list of technicians, with tap-to-call, email, notes and job history |
 | Alerts | Bell in the header and `/alerts`: maintenance due or overdue, warranties and contracts ending, ageing equipment, urgent jobs, scheduled visits, broken equipment and documents to review. Alerts clear themselves when resolved; snooze, dismiss and per-user lead times. Optional device notifications: the app asks each user's permission first ("Turn on notifications" on the Alerts page, or the invitation on the dashboard), then shows new urgent and upcoming alerts while the app is open |
 | Dashboard | Urgent items first, then what's coming up, open jobs, ending warranties, recent work and replacement planning |
+| Languages and themes | English (default) and Sinhala, switched with EN / සිං in the header or on `/account`; the choice is saved per user, so alerts are written in it too. Light (default) and dark themes via the sun / moon button |
 | Forms | Every dropdown has "Other…" with a text box for your own value; typed rooms, equipment and providers are created on save |
 
 Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. Device notifications work while the app is open in a browser tab; notifications when it's closed (web push) and email reminders are not built yet.
@@ -70,9 +71,12 @@ src/app/(app)/                       signed-in app: dashboard, properties, alert
 src/app/(app)/properties/*actions.ts server actions (each re-checks ownership)
 src/app/api/                         document files, AI extraction, Google sign-in
 src/lib/                             db, session/auth, alerts, profiles, room templates, storage, formatting
+src/i18n/                            language and theme cookies, translator, en.ts / si.ts dictionaries
 src/lib/ai/                          optional AI document extraction
 src/components/                      UI building blocks, photos, illustrations
 ```
+
+To add or change wording, edit `src/i18n/messages/en.ts` and give the same key a translation in `si.ts` (TypeScript reports any missing key).
 
 ## Scripts
 

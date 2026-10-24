@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { DOCUMENT_KINDS } from "@/lib/constants";
 import { Select } from "@/components/select";
+import { useT } from "@/i18n/client";
 import { uploadDocument, type UploadState } from "../../document-actions";
 
 export function UploadForm({
@@ -10,20 +11,19 @@ export function UploadForm({
   assets,
   presetAssetId,
   aiEnabled,
-  aiHint,
 }: {
   propertyId: string;
   assets: { id: string; name: string }[];
   presetAssetId?: string;
   aiEnabled: boolean;
-  aiHint: string;
 }) {
+  const t = useT();
   const [state, action, pending] = useActionState<UploadState, FormData>(uploadDocument, undefined);
 
   return (
     <form action={action} className="card space-y-3">
-      <h2 className="h2">Upload a document</h2>
-      <p className="text-xs text-muted">Receipts, invoices, warranty cards, manuals, service reports or a photo of an equipment label.</p>
+      <h2 className="h2">{t("documents.uploadTitle")}</h2>
+      <p className="text-xs text-muted">{t("documents.uploadHint")}</p>
       <input type="hidden" name="propertyId" value={propertyId} />
       <input
         type="file"
@@ -33,35 +33,35 @@ export function UploadForm({
         className="block w-full text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-sm"
       />
       <div>
-        <label className="field-label" htmlFor="kind">Type</label>
+        <label className="field-label" htmlFor="kind">{t("common.type")}</label>
         <Select
           name="kind"
           options={DOCUMENT_KINDS}
-          emptyLabel={aiEnabled ? "Let AI decide" : "— Not sure"}
+          emptyLabel={aiEnabled ? t("documents.letAiDecide") : t("documents.notSure")}
           defaultValue=""
-          otherPlaceholder="e.g. Inspection report"
+          otherPlaceholder={t("documents.kindPlaceholder")}
         />
       </div>
       <div>
-        <label className="field-label" htmlFor="assetId">Asset</label>
+        <label className="field-label" htmlFor="assetId">{t("common.equipment")}</label>
         <Select
           name="assetId"
-          emptyLabel="— Not linked yet"
+          emptyLabel={t("documents.notLinked")}
           options={assets.map((a) => ({ value: a.id, label: a.name }))}
           defaultValue={presetAssetId ?? ""}
-          otherPlaceholder="New equipment name"
+          otherPlaceholder={t("common.newEquipmentName")}
         />
       </div>
       {aiEnabled ? (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="analyse" defaultChecked />
-          Read it with AI and suggest asset details
+          {t("documents.analyse")}
         </label>
       ) : (
-        <p className="text-xs text-muted">{aiHint}</p>
+        <p className="text-xs text-muted">{t("documents.aiOff")}</p>
       )}
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-      <button className="btn w-full" disabled={pending}>{pending ? "Uploading…" : "Upload"}</button>
+      <button className="btn w-full" disabled={pending}>{pending ? t("photos.uploading") : t("assets.upload")}</button>
     </form>
   );
 }

@@ -8,6 +8,7 @@ import { MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { required, str } from "@/lib/forms";
 import { deleteStoredFile, saveFile } from "@/lib/storage";
 import { aiConfigured } from "@/lib/ai/client";
+import { getT } from "@/i18n/server";
 
 export type PhotoState = { error?: string; added?: number } | undefined;
 
@@ -22,15 +23,16 @@ export async function uploadAssetPhotos(_prev: PhotoState, form: FormData): Prom
   const user = await requireUser();
   const propertyId = required(form, "propertyId");
   await assertOwnsProperty(user.id, propertyId);
+  const t = await getT();
   const asset = await db.asset.findFirst({ where: { id: required(form, "assetId"), propertyId } });
-  if (!asset) return { error: "Equipment not found" };
+  if (!asset) return { error: t("photos.errNotFound") };
 
   const files = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
-  if (!files.length) return { error: "Choose or take a photo first" };
-  if (files.length > 10) return { error: "Add up to 10 photos at a time" };
+  if (!files.length) return { error: t("photos.errNone") };
+  if (files.length > 10) return { error: t("photos.errTooMany") };
   for (const f of files) {
-    if (!PHOTO_TYPES.has(f.type)) return { error: `${f.name} isn't a JPEG, PNG, WebP or GIF image` };
-    if (f.size > MAX_UPLOAD_BYTES) return { error: `${f.name} is larger than 15 MB` };
+    if (!PHOTO_TYPES.has(f.type)) return { error: t("photos.errType", { name: f.name }) };
+    if (f.size > MAX_UPLOAD_BYTES) return { error: t("photos.errSize", { name: f.name }) };
   }
 
   const caption = str(form, "caption")?.slice(0, 80) ?? null;

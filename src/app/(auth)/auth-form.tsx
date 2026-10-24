@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { useT } from "@/i18n/client";
 import { login, signup, type AuthState } from "./actions";
 
-const GOOGLE_ERRORS: Record<string, string> = {
-  google_not_configured: "Google sign-in isn't set up on this server yet. Use email and password for now.",
-  google_cancelled: "Google sign-in was cancelled.",
-  google_failed: "Google sign-in didn't complete. Please try again.",
-  google_unverified: "That Google account's email isn't verified, so it can't be linked to an existing account.",
-};
+const GOOGLE_ERRORS = {
+  google_not_configured: "auth.googleNotConfigured",
+  google_cancelled: "auth.googleCancelled",
+  google_failed: "auth.googleFailed",
+  google_unverified: "auth.googleUnverified",
+} as const;
 
 function GoogleIcon() {
   return (
@@ -23,19 +24,15 @@ function GoogleIcon() {
 }
 
 export function AuthForm({ mode, error }: { mode: "login" | "signup"; error?: string }) {
-  const [state, action, pending] = useActionState<AuthState, FormData>(
-    mode === "login" ? login : signup,
-    undefined,
-  );
-  const googleError = error ? GOOGLE_ERRORS[error] : undefined;
+  const t = useT();
+  const [state, action, pending] = useActionState<AuthState, FormData>(mode === "login" ? login : signup, undefined);
+  const googleError = error && error in GOOGLE_ERRORS ? t(GOOGLE_ERRORS[error as keyof typeof GOOGLE_ERRORS]) : undefined;
 
   return (
     <div className="card w-full max-w-sm space-y-5">
       <div>
-        <h1 className="h1">{mode === "login" ? "Sign in" : "Create your account"}</h1>
-        <p className="mt-1 text-sm text-muted">
-          {mode === "login" ? "Welcome back. Sign in to see what needs attention." : "Set up your home, apartment or business in a few minutes."}
-        </p>
+        <h1 className="h1">{mode === "login" ? t("auth.signInTitle") : t("auth.signUpTitle")}</h1>
+        <p className="mt-1 text-sm text-muted">{mode === "login" ? t("auth.signInIntro") : t("auth.signUpIntro")}</p>
       </div>
 
       {/* Plain link: the route redirects to Google, so no client JS is needed */}
@@ -44,29 +41,29 @@ export function AuthForm({ mode, error }: { mode: "login" | "signup"; error?: st
         className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium shadow-sm transition hover:border-accent hover:bg-surface-2"
       >
         <GoogleIcon />
-        {mode === "login" ? "Continue with Google" : "Sign up with Google"}
+        {mode === "login" ? t("auth.continueGoogle") : t("auth.signUpGoogle")}
       </a>
       {googleError && <p className="text-sm text-danger">{googleError}</p>}
 
       <div className="flex items-center gap-3 text-xs text-muted">
         <span className="h-px flex-1 bg-border" />
-        or use email
+        {t("auth.orEmail")}
         <span className="h-px flex-1 bg-border" />
       </div>
 
       <form action={action} className="space-y-4">
         {mode === "signup" && (
           <div>
-            <label className="field-label" htmlFor="name">Name</label>
+            <label className="field-label" htmlFor="name">{t("common.name")}</label>
             <input className="input" id="name" name="name" autoComplete="name" required />
           </div>
         )}
         <div>
-          <label className="field-label" htmlFor="email">Email</label>
+          <label className="field-label" htmlFor="email">{t("common.email")}</label>
           <input className="input" id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <div>
-          <label className="field-label" htmlFor="password">Password</label>
+          <label className="field-label" htmlFor="password">{t("auth.password")}</label>
           <input
             className="input"
             id="password"
@@ -79,15 +76,15 @@ export function AuthForm({ mode, error }: { mode: "login" | "signup"; error?: st
         </div>
         {state?.error && <p className="text-sm text-danger">{state.error}</p>}
         <button className="btn w-full" disabled={pending}>
-          {pending ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+          {pending ? t("common.pleaseWait") : mode === "login" ? t("auth.submitSignIn") : t("auth.submitSignUp")}
         </button>
       </form>
 
       <p className="text-center text-sm text-muted">
         {mode === "login" ? (
-          <>No account? <Link className="btn-link" href="/signup">Create one</Link></>
+          <>{t("auth.noAccount")} <Link className="btn-link" href="/signup">{t("auth.createOne")}</Link></>
         ) : (
-          <>Already registered? <Link className="btn-link" href="/login">Sign in</Link></>
+          <>{t("auth.haveAccount")} <Link className="btn-link" href="/login">{t("auth.submitSignIn")}</Link></>
         )}
       </p>
     </div>

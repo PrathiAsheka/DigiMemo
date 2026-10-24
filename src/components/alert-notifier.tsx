@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useT } from "@/i18n/client";
+import type { Translator } from "@/i18n/translator";
 
 // Shows new alerts as system (desktop / phone) notifications while the app is open.
 // The browser permission is only requested when the user clicks "Turn on", and the
@@ -89,7 +91,7 @@ async function fetchUnread(): Promise<UnreadAlert[]> {
 }
 
 /** Notifies about alerts the user hasn't been told about yet (urgent and soon only). */
-async function notifyNew({ firstRun = false } = {}) {
+async function notifyNew(t: Translator, { firstRun = false } = {}) {
   const alerts = await fetchUnread();
   const seen = seenIds();
   const fresh = alerts.filter((a) => !seen.has(a.id));
@@ -98,8 +100,8 @@ async function notifyNew({ firstRun = false } = {}) {
     if (alerts.length) {
       const urgent = alerts.filter((a) => a.severity === "critical").length;
       show(
-        "Notifications are on",
-        `You have ${alerts.length} unread alert${alerts.length === 1 ? "" : "s"}${urgent ? `, ${urgent} urgent` : ""}. New ones will appear here.`,
+        t("notify.onTitle"),
+        urgent ? t("notify.summaryUrgent", { count: alerts.length, urgent }) : t("notify.summary", { count: alerts.length }),
         "/alerts",
         "hdt-summary",
       );
@@ -108,7 +110,7 @@ async function notifyNew({ firstRun = false } = {}) {
   }
   const important = fresh.filter((a) => a.severity !== "info");
   if (important.length > 3) {
-    show(`${important.length} new alerts`, important.slice(0, 3).map((a) => a.title).join("\n"), "/alerts", "hdt-summary");
+    show(t("dashboard.newAlerts", { count: important.length }), important.slice(0, 3).map((a) => a.title).join("\n"), "/alerts", "hdt-summary");
   } else {
     for (const a of important) show(a.title, a.message, a.href, a.id);
   }
@@ -116,10 +118,11 @@ async function notifyNew({ firstRun = false } = {}) {
 
 /** Invisible poller, mounted once in the signed-in layout. */
 export function AlertNotifier() {
+  const t = useT();
   const { permission, enabled } = useNotificationState();
   useEffect(() => {
     if (permission !== "granted" || !enabled) return;
-    const tick = () => void notifyNew().catch(() => {});
+    const tick = () => void notifyNew(t).catch(() => {});
     tick();
     const timer = window.setInterval(tick, POLL_MS);
     const onVisible = () => document.visibilityState === "visible" && tick();
@@ -128,12 +131,13 @@ export function AlertNotifier() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [permission, enabled]);
+  }, [permission, enabled, t]);
   return null;
 }
 
 /** Controls on the Alerts page: ask for permission, test, or switch off. */
 export function NotificationSettings() {
+  const t = useT();
   const { permission, enabled } = useNotificationState();
   const [message, setMessage] = useState<string | null>(null);
 
@@ -142,13 +146,13 @@ export function NotificationSettings() {
     const result = await Notification.requestPermission();
     if (result === "granted") {
       // Summary first (marks current alerts as seen), then start the poller.
-      await notifyNew({ firstRun: true }).catch(() => {});
+      await notifyNew(t, { firstRun: true }).catch(() => {});
       storage.set(ENABLED_KEY, "on");
     } else {
-      setMessage(result === "denied" ? "Notifications were blocked. You can allow them in your browser's site settings." : "Notifications weren't turned on.");
+      setMessage(result === "denied" ? t("notify.blockedNow") : t("notify.notTurnedOn"));
     }
     announce();
-  }, []);
+  }, [t]);
 
   const turnOff = () => {
     storage.set(ENABLED_KEY, "off");
@@ -158,30 +162,30 @@ export function NotificationSettings() {
   return (
     <div className="card space-y-3">
       <div>
-        <h2 className="h2">Notifications</h2>
-        <p className="text-xs text-muted">Show urgent and upcoming alerts as notifications on this device while the app is open.</p>
+        <h2 className="h2">{t("notify.title")}</h2>
+        <p className="text-xs text-muted">{t("notify.hint")}</p>
       </div>
       {permission === "unsupported" ? (
-        <p className="text-sm text-muted">This browser doesn&apos;t support notifications.</p>
+        <p className="text-sm text-muted">{t("notify.unsupported")}</p>
       ) : permission === "denied" ? (
-        <p className="text-sm text-warn">Notifications are blocked for this site. Allow them in your browser&apos;s site settings (the lock icon next to the address), then reload.</p>
+        <p className="text-sm text-warn">{t("notify.blocked")}</p>
       ) : permission === "granted" && enabled ? (
         <>
-          <p className="text-sm text-ok">On for this device.</p>
+          <p className="text-sm text-ok">{t("notify.on")}</p>
           <div className="flex flex-wrap gap-3">
             <button
               className="btn-secondary"
-              onClick={() => show("Test notification", "This is how new alerts will appear.", "/alerts", "hdt-test")}
+              onClick={() => show(t("notify.testTitle"), t("notify.testBody"), "/alerts", "hdt-test")}
             >
-              Send a test
+              {t("notify.sendTest")}
             </button>
-            <button className="btn-link" onClick={turnOff}>Turn off</button>
+            <button className="btn-link" onClick={turnOff}>{t("notify.turnOff")}</button>
           </div>
         </>
       ) : (
         <>
-          <p className="text-sm text-muted">Your browser will ask for permission first. You can turn this off at any time.</p>
-          <button className="btn w-full" onClick={turnOn}>Turn on notifications</button>
+          <p className="text-sm text-muted">{t("notify.askFirst")}</p>
+          <button className="btn w-full" onClick={turnOn}>{t("notify.turnOn")}</button>
         </>
       )}
       {message && <p className="text-sm text-warn">{message}</p>}
@@ -191,6 +195,7 @@ export function NotificationSettings() {
 
 /** One-time invitation shown on the dashboard until the user decides. */
 export function NotificationPrompt() {
+  const t = useT();
   const { permission } = useNotificationState();
   const [hidden, setHidden] = useState(true);
   useEffect(() => {
@@ -207,11 +212,11 @@ export function NotificationPrompt() {
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-accent/30 bg-ok-bg px-4 py-3 text-sm">
       <span className="text-lg" aria-hidden="true">🔔</span>
-      <span className="flex-1">Get a notification on this device when maintenance is due or something needs attention?</span>
+      <span className="flex-1">{t("notify.prompt")}</span>
       <Link href="/alerts#notifications" className="btn py-1.5" onClick={() => storage.set(PROMPT_DISMISSED_KEY, "1")}>
-        Set up
+        {t("notify.setUp")}
       </Link>
-      <button className="btn-link" onClick={dismiss}>Not now</button>
+      <button className="btn-link" onClick={dismiss}>{t("notify.notNow")}</button>
     </div>
   );
 }
