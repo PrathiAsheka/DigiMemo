@@ -7,6 +7,8 @@ import homeCozyLiving from "@/assets/photos/home-cozy-living.jpg";
 import homeSmartLiving from "@/assets/photos/home-smart-living.jpg";
 import officeCorridor from "@/assets/photos/office-corridor.jpg";
 import officeOpenPlan from "@/assets/photos/office-open-plan.jpg";
+// "Other place" photo: Yunfan Li on Unsplash (Unsplash License).
+import otherBuilding from "@/assets/photos/other-building.jpg";
 
 // Photography per kind of place. "card" is the recognisable exterior/overview shot used
 // for choices and property cards; "hero" is a moodier interior for wide banners (currently
@@ -31,6 +33,10 @@ const PHOTOS: Partial<Record<Illustration, Record<Variant, Photo>>> = {
   office: {
     card: { src: officeOpenPlan, alt: "Bright open-plan office", focus: "center 55%" },
     hero: { src: officeCorridor, alt: "Office corridor with glass meeting rooms", focus: "center 45%" },
+  },
+  place: {
+    card: { src: otherBuilding, alt: "White building with large windows behind green plants", focus: "center 55%" },
+    hero: { src: otherBuilding, alt: "White building with large windows behind green plants", focus: "center 55%" },
   },
 };
 
