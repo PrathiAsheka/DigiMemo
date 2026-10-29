@@ -10,6 +10,7 @@ A property intelligence and maintenance platform for homes, apartments and busin
 | Accounts | Email and password or "Continue with Google"; `/account` to change name and password, see sign-in methods, or delete the account and all its data |
 | Onboarding | First sign-in asks what you manage (home, apartment, company or other place); wording, typical rooms and suggestions follow that choice |
 | Properties and rooms | Nested spaces (building → floor → room), with one-click "add a typical room" |
+| Members | The people at each place (family, tenants, staff) with role, date of birth and contacts. Certificates and other personal documents are linked to a member, and the Documents tab groups everything by member |
 | Equipment | Model, serial, purchase and install dates, expected life, status and notes; typical equipment is suggested per room (Home → Kitchen → Refrigerator / Oven / Washing machine) |
 | Product photos | Front view, model / serial label and more, from the phone camera or a file; the front view is the item's thumbnail everywhere |
 | Warranties and contracts | Per item, with time left shown on every page |
@@ -28,8 +29,8 @@ Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. 
 ## Stack
 
 - Next.js 16 (App Router, Server Actions) with TypeScript and Tailwind CSS v4.
-- Prisma 6 with SQLite for local development. Switch `provider` in `prisma/schema.prisma` to `postgresql` for production.
-- Uploaded files are stored on local disk under `UPLOAD_DIR` and served only to their owner through `/api/documents/[id]`. Swap `src/lib/storage.ts` for S3 or GCS in production.
+- Prisma 6 with PostgreSQL (Neon on Vercel; `npx prisma dev` or any Postgres locally).
+- Uploaded files go to a private Vercel Blob store when `BLOB_READ_WRITE_TOKEN` is set, otherwise to the local `UPLOAD_DIR` folder (`src/lib/file-store.ts`). Either way they are served only to their owner through `/api/documents/[id]`.
 - Optional AI document reading through a hosted AI API (see below).
 
 ## Getting started
@@ -37,6 +38,8 @@ Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. 
 ```bash
 npm install
 cp .env.example .env    # then set SESSION_SECRET
+npx prisma dev          # local Postgres; keep it running and copy the postgres:// URL it prints
+                        # into DATABASE_URL and DATABASE_URL_UNPOOLED (add pgbouncer=true& after the ?)
 npx prisma migrate dev
 npm run db:seed         # optional demo data: a homeowner account (house, apartment, beach house, office)
                         # and a business account (café + warehouse); logins are in prisma/seed.ts
@@ -58,6 +61,17 @@ Uploading a receipt, warranty card or label photo can fill in the equipment, war
 3. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` (set `APP_URL` in production) and restart the server.
 
 A Google account is linked to an existing account with the same email only when Google reports the email as verified. Email and password sign-in keeps working alongside it.
+
+## Deploying to Vercel
+
+Vercel can't keep files between requests, so the database and uploads live in hosted services:
+
+1. **Database:** in the Vercel project, open **Storage → Create Database → Neon** (free tier) and connect it to the project. This adds `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+2. **Uploads:** **Storage → Create → Blob**, choose **Private** access, and connect it to the project. This adds `BLOB_READ_WRITE_TOKEN`.
+3. **Settings → Environment Variables:** add `SESSION_SECRET` (32+ random characters, see `.env.example`). For Google sign-in also add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `APP_URL` (your site's address), and add `<APP_URL>/api/auth/google/callback` as a redirect URI in Google Cloud.
+4. **Redeploy.** The build runs `prisma migrate deploy` first, so the tables are created automatically.
+
+Optional demo data on the live site: put the production `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `BLOB_READ_WRITE_TOKEN` in a local `.env` and run `npm run db:seed`. The demo logins are public in `prisma/seed.ts`, so change them first or skip this for a public site.
 
 ## Layout
 

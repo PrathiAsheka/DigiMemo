@@ -121,6 +121,19 @@ export const en = {
     service: "Service",
     repair: "Repair",
     replacement: "Replacement",
+    // member roles
+    self: "Me",
+    spouse: "Spouse / partner",
+    child: "Child",
+    parent: "Parent",
+    grandparent: "Grandparent",
+    sibling: "Brother / sister",
+    relative: "Relative",
+    tenant: "Tenant",
+    helper: "Domestic helper",
+    manager: "Manager",
+    employee: "Employee",
+    contractor: "Contractor",
   },
 
   prefs: {
@@ -359,6 +372,8 @@ export const en = {
     maintenanceHint: "{count} overdue",
     workOrdersHint: "{count} open",
     documentsHint: "{count} to review",
+    members: "Members",
+    membersAbout: "The people here, and the certificates and records that belong to each of them.",
   },
 
   overview: {
@@ -551,7 +566,6 @@ export const en = {
     kindPlaceholder: "e.g. Inspection report",
     notLinked: "— Not linked yet",
     analyse: "Read it with AI and suggest equipment details",
-    aiOff: "AI document reading is off: set ANTHROPIC_API_KEY in .env to turn it on.",
     extractionFailed: "Reading the document failed.",
     networkError: "Network error while contacting the server",
     reading: "Reading the document… this can take up to a minute.",
@@ -560,6 +574,13 @@ export const en = {
     errNone: "Choose a file to upload",
     errSize: "Files must be 15 MB or smaller",
     errType: "Upload a PDF, image (JPEG, PNG, WebP, GIF) or text file",
+    byMember: "Documents by member",
+    sharedTitle: "Whole place",
+    sharedHint: "Not about one person",
+    groupEmpty: "No documents here yet.",
+    member: "Member",
+    notForPerson: "— Not for a specific person",
+    memberHint: "Who is this about? e.g. a birth certificate, exam certificate or medical record.",
   },
 
   review: {
@@ -587,6 +608,7 @@ export const en = {
     columns: "Columns: task · repeat every N days (blank = one-off) · first due date.",
     confirm: "Confirm and save",
     linkedEquipment: "Linked equipment",
+    forMember: "for",
   },
 
   providers: {
@@ -742,6 +764,28 @@ export const en = {
     visitMessage: "{where} · make sure someone can let them in.",
     reviewDoc: "Check what AI read from {name}",
     reviewDocMessage: "{where} · nothing is saved until you confirm.",
+  },
+
+  members: {
+    empty: "No members yet. Add the people who live or work here, then link their certificates and records to them.",
+    role: "Role",
+    roleNotSet: "— Not set",
+    rolePlaceholder: "e.g. Cousin",
+    birthDate: "Date of birth",
+    notesPlaceholder: "e.g. Allergies, school, blood group",
+    age_one: "{count} year old",
+    age_other: "{count} years old",
+    documents_one: "{count} document",
+    documents_other: "{count} documents",
+    noDocuments: "No documents for {name} yet.",
+    removeConfirm: "Remove {name}? Their documents stay with the property, no longer linked to them.",
+    remove: "Remove member",
+    sharedDocs_one: "{count} document belongs to the whole place, not one person.",
+    sharedDocs_other: "{count} documents belong to the whole place, not one person.",
+    addTitle: "Add a member",
+    addHint: "Family, tenants, staff: anyone whose documents you keep here.",
+    add: "Add member",
+    newName: "New member name",
   },
 
   // @@end

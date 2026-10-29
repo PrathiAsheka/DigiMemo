@@ -1,5 +1,5 @@
 // DigiMemo — core data model (proposal §14).
-// SQLite for local development; switch `provider` to "postgresql" for production.
+// PostgreSQL everywhere (Neon on Vercel, any Postgres locally).
 // Enum-like fields are strings; allowed values live in src/lib/constants.ts.
 
 generator client {
@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection, used by the app
+  directUrl = env("DATABASE_URL_UNPOOLED") // direct connection, used by migrations
 }
 
 model User {
@@ -78,8 +79,28 @@ model Property {
   tasks       MaintenanceTask[]
   workOrders  WorkOrder[]
   costRecords CostRecord[]
+  members     Member[]
 
   @@index([ownerId])
+}
+
+// A person who lives or works at the property (family member, tenant, employee…).
+// Documents such as certificates, insurance or ID records can belong to one member.
+model Member {
+  id         String    @id @default(cuid())
+  propertyId String
+  name       String
+  role       String? // self | spouse | child | parent | … | employee (see MEMBER_ROLES) or custom text
+  birthDate  DateTime?
+  phone      String?
+  email      String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@index([propertyId])
 }
 
 // Building, floor, room or area. Nested via parentId (e.g. Floor 1 → Kitchen).
@@ -133,6 +154,7 @@ model Document {
   propertyId  String
   assetId     String?
   workOrderId String?
+  memberId    String? // the person this document is about, e.g. a birth or training certificate
   filename    String
   mimeType    String
   sizeBytes   Int
@@ -148,10 +170,12 @@ model Document {
   property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   asset      Asset?     @relation(fields: [assetId], references: [id], onDelete: SetNull)
   workOrder  WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  member     Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
   warranties Warranty[]
 
   @@index([propertyId])
   @@index([assetId])
+  @@index([memberId])
 }
 
 model Warranty {

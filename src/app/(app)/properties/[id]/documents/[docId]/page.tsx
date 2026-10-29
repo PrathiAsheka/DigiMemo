@@ -68,13 +68,14 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
 
   const doc = await db.document.findFirst({
     where: { id: docId, propertyId: property.id },
-    include: { asset: { select: { id: true, name: true } } },
+    include: { asset: { select: { id: true, name: true } }, member: { select: { id: true, name: true } } },
   });
   if (!doc) notFound();
 
-  const [assets, spaces] = await Promise.all([
+  const [assets, spaces, members] = await Promise.all([
     db.asset.findMany({ where: { propertyId: property.id }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.space.findMany({ where: { propertyId: property.id }, orderBy: { name: "asc" } }),
+    db.member.findMany({ where: { propertyId: property.id }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, role: true } }),
   ]);
 
   let extraction: Extraction | null = null;
@@ -86,6 +87,7 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
   const fileUrl = `/api/documents/${doc.id}`;
   const isImage = doc.mimeType.startsWith("image/");
   const assetOptions = assets.map((a) => ({ value: a.id, label: a.name }));
+  const memberOptions = members.map((m) => ({ value: m.id, label: m.role ? `${m.name} (${t.label(m.role)})` : m.name }));
   const today = startOfDayUTC(new Date());
 
   return (
@@ -97,6 +99,7 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
           <p className="mt-1 text-sm text-muted">
             {t.label(doc.kind)} · {t("review.uploaded", { date: t.date(doc.createdAt) })} · {(doc.sizeBytes / 1024).toFixed(0)} KB
             {doc.asset && <> · {t("review.linkedTo")} <Link className="hover:underline" href={`/properties/${property.id}/assets/${doc.asset.id}`}>{doc.asset.name}</Link></>}
+            {doc.member && <> · {t("review.forMember")} <Link className="hover:underline" href={`/properties/${property.id}/members`}>{doc.member.name}</Link></>}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -154,6 +157,10 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
               <Hidden name="documentId" value={doc.id} />
               <Hidden name="currency" value={extraction.currency ?? "USD"} />
               <Hidden name="vendor" value={extraction.vendor.value ?? ""} />
+
+              <Field label={t("documents.member")} name="memberId">
+                <Select name="memberId" emptyLabel={t("documents.notForPerson")} options={memberOptions} defaultValue={doc.memberId} otherPlaceholder={t("members.newName")} />
+              </Field>
 
               <fieldset className="space-y-3">
                 <legend className="text-sm font-medium">{t("common.equipment")}</legend>
@@ -234,6 +241,9 @@ export default async function DocumentPage({ params }: PageProps<"/properties/[i
               <h2 className="h2">{t("common.details")}</h2>
               <Hidden name="documentId" value={doc.id} />
               <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t("documents.member")} name="memberId" className="sm:col-span-2">
+                  <Select name="memberId" emptyLabel={t("documents.notForPerson")} options={memberOptions} defaultValue={doc.memberId} otherPlaceholder={t("members.newName")} />
+                </Field>
                 <Field label={t("common.type")} name="kind"><Select name="kind" options={DOCUMENT_KINDS} defaultValue={doc.kind} /></Field>
                 <Field label={t("review.linkedEquipment")} name="assetId"><Select name="assetId" emptyLabel={t("common.noneOption")} options={assetOptions} defaultValue={doc.assetId} otherPlaceholder={t("common.newEquipmentName")} /></Field>
               </div>

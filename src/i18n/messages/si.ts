@@ -112,6 +112,19 @@ export const si: Messages = {
     service: "සේවාව",
     repair: "අලුත්වැඩියාව",
     replacement: "ප්‍රතිස්ථාපනය",
+    // member roles
+    self: "මම",
+    spouse: "සැමියා / බිරිඳ",
+    child: "දරුවා",
+    parent: "දෙමාපිය",
+    grandparent: "සීයා / ආච්චි",
+    sibling: "සහෝදරයා / සහෝදරිය",
+    relative: "ඥාතියා",
+    tenant: "කුලී නිවැසියා",
+    helper: "ගෘහ සේවකයා",
+    manager: "කළමනාකරු",
+    employee: "සේවකයා",
+    contractor: "කොන්ත්‍රාත්කරු",
   },
 
   prefs: {
@@ -350,6 +363,8 @@ export const si: Messages = {
     maintenanceHint: "ප්‍රමාද {count}",
     workOrdersHint: "විවෘත {count}",
     documentsHint: "සමාලෝචනයට {count}",
+    members: "සාමාජිකයන්",
+    membersAbout: "මෙහි සිටින අය, සහ එක් එක් අයට අයත් සහතික සහ වාර්තා.",
   },
 
   overview: {
@@ -542,7 +557,6 @@ export const si: Messages = {
     kindPlaceholder: "උදා: පරීක්ෂණ වාර්තාව",
     notLinked: "— තවම සම්බන්ධ කර නැත",
     analyse: "AI මගින් කියවා උපකරණ විස්තර යෝජනා කරන්න",
-    aiOff: "AI ලේඛන කියවීම අක්‍රියයි: එය සක්‍රිය කිරීමට .env හි ANTHROPIC_API_KEY සකසන්න.",
     extractionFailed: "ලේඛනය කියවීම අසාර්ථක විය.",
     networkError: "සේවාදායකය හා සම්බන්ධ වීමේදී ජාල දෝෂයක්",
     reading: "ලේඛනය කියවමින්… මෙයට විනාඩියක් දක්වා ගත විය හැක.",
@@ -551,6 +565,13 @@ export const si: Messages = {
     errNone: "උඩුගත කිරීමට ගොනුවක් තෝරන්න",
     errSize: "ගොනු 15 MB හෝ ඊට අඩු විය යුතුය",
     errType: "PDF, රූපයක් (JPEG, PNG, WebP, GIF) හෝ පෙළ ගොනුවක් උඩුගත කරන්න",
+    byMember: "සාමාජිකයන් අනුව ලේඛන",
+    sharedTitle: "මුළු ස්ථානයටම",
+    sharedHint: "එක් අයෙකුට අදාළ නොවේ",
+    groupEmpty: "මෙහි තවම ලේඛන නැත.",
+    member: "සාමාජිකයා",
+    notForPerson: "— නිශ්චිත අයෙකුට නොවේ",
+    memberHint: "මෙය කාටද අදාළ? උදා: උප්පැන්න සහතිකය, විභාග සහතිකය හෝ වෛද්‍ය වාර්තාව.",
   },
 
   review: {
@@ -578,6 +599,7 @@ export const si: Messages = {
     columns: "තීරු: කාර්යය · දින N කට වරක් (හිස් = එක් වරක්) · පළමු නියමිත දිනය.",
     confirm: "තහවුරු කර සුරකින්න",
     linkedEquipment: "සම්බන්ධ උපකරණය",
+    forMember: "අයිතිකරු",
   },
 
   providers: {
@@ -732,6 +754,28 @@ export const si: Messages = {
     visitMessage: "{where} · ඔවුන්ට ඇතුළු වීමට කෙනෙකු සිටින බව සහතික කරන්න.",
     reviewDoc: "{name} වෙතින් AI කියවූ දේ පරීක්ෂා කරන්න",
     reviewDocMessage: "{where} · ඔබ තහවුරු කරන තුරු කිසිවක් සුරැකෙන්නේ නැත.",
+  },
+
+  members: {
+    empty: "තවම සාමාජිකයන් නැත. මෙහි ජීවත් වන හෝ වැඩ කරන අය එක් කර, ඔවුන්ගේ සහතික සහ වාර්තා ඔවුන්ට සම්බන්ධ කරන්න.",
+    role: "භූමිකාව",
+    roleNotSet: "— සකසා නැත",
+    rolePlaceholder: "උදා: ඥාති සහෝදරයා",
+    birthDate: "උපන් දිනය",
+    notesPlaceholder: "උදා: අසාත්මිකතා, පාසල, රුධිර වර්ගය",
+    age_one: "වයස අවු. {count}",
+    age_other: "වයස අවු. {count}",
+    documents_one: "ලේඛන {count}",
+    documents_other: "ලේඛන {count}",
+    noDocuments: "{name} සඳහා තවම ලේඛන නැත.",
+    removeConfirm: "{name} ඉවත් කරන්නද? ඔවුන්ගේ ලේඛන දේපළ සමඟ රැඳේ, නමුත් ඔවුන්ට සම්බන්ධ නොවේ.",
+    remove: "සාමාජිකයා ඉවත් කරන්න",
+    sharedDocs_one: "ලේඛන {count}ක් එක් අයෙකුට නොව මුළු ස්ථානයටම අයත් වේ.",
+    sharedDocs_other: "ලේඛන {count}ක් එක් අයෙකුට නොව මුළු ස්ථානයටම අයත් වේ.",
+    addTitle: "සාමාජිකයෙකු එක් කරන්න",
+    addHint: "පවුලේ අය, කුලී නිවැසියන්, සේවකයන්: ඔබ ලේඛන තබා ගන්නා ඕනෑම අයෙක්.",
+    add: "සාමාජිකයා එක් කරන්න",
+    newName: "නව සාමාජිකයාගේ නම",
   },
 
   // @@end

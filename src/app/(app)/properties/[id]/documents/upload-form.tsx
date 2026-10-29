@@ -9,12 +9,16 @@ import { uploadDocument, type UploadState } from "../../document-actions";
 export function UploadForm({
   propertyId,
   assets,
+  members,
   presetAssetId,
+  presetMemberId,
   aiEnabled,
 }: {
   propertyId: string;
   assets: { id: string; name: string }[];
+  members: { id: string; name: string; role: string | null }[];
   presetAssetId?: string;
+  presetMemberId?: string;
   aiEnabled: boolean;
 }) {
   const t = useT();
@@ -43,6 +47,17 @@ export function UploadForm({
         />
       </div>
       <div>
+        <label className="field-label" htmlFor="memberId">{t("documents.member")}</label>
+        <Select
+          name="memberId"
+          emptyLabel={t("documents.notForPerson")}
+          options={members.map((m) => ({ value: m.id, label: m.role ? `${m.name} (${t.label(m.role)})` : m.name }))}
+          defaultValue={presetMemberId ?? ""}
+          otherPlaceholder={t("members.newName")}
+        />
+        <p className="mt-1 text-xs text-muted">{t("documents.memberHint")}</p>
+      </div>
+      <div>
         <label className="field-label" htmlFor="assetId">{t("common.equipment")}</label>
         <Select
           name="assetId"
@@ -52,13 +67,11 @@ export function UploadForm({
           otherPlaceholder={t("common.newEquipmentName")}
         />
       </div>
-      {aiEnabled ? (
+      {aiEnabled && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="analyse" defaultChecked />
           {t("documents.analyse")}
         </label>
-      ) : (
-        <p className="text-xs text-muted">{t("documents.aiOff")}</p>
       )}
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       <button className="btn w-full" disabled={pending}>{pending ? t("photos.uploading") : t("assets.upload")}</button>

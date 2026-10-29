@@ -46,7 +46,7 @@ export async function uploadAssetPhotos(_prev: PhotoState, form: FormData): Prom
         filename: f.name.slice(0, 200),
         mimeType: f.type,
         sizeBytes: f.size,
-        storageKey: await saveFile(propertyId, f.name, Buffer.from(await f.arrayBuffer())),
+        storageKey: await saveFile(propertyId, f.name, Buffer.from(await f.arrayBuffer()), f.type),
         kind: "photo",
         caption,
         extractionStatus: readLabel ? "pending" : "none",

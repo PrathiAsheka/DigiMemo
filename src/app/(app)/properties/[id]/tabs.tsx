@@ -8,6 +8,7 @@ type Counts = { maintenance: number; workOrders: number; documents: number };
 
 const TABS = [
   { slug: "", key: "overview" },
+  { slug: "/members", key: "members" },
   { slug: "/maintenance", key: "maintenance", count: "maintenance", tone: "danger" },
   { slug: "/work-orders", key: "workOrders", count: "workOrders", tone: "warn" },
   { slug: "/documents", key: "documents", count: "documents", tone: "warn" },

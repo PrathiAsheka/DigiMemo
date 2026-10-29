@@ -6,11 +6,9 @@
 // every state, costs, providers and real document files, including one receipt waiting
 // on the AI review screen so that flow can be tried without an API key.
 import bcrypt from "bcryptjs";
-import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { labelPhoto, productPhoto, type ProductKind } from "./demo-images";
+import { deleteStoredFile, saveFile } from "../src/lib/file-store";
 
 const DEMO_EMAIL = "demo@hometwin.test";
 const DEMO_PASSWORD = "demo-twin-2026";
@@ -18,7 +16,6 @@ const DEMO_PASSWORD = "demo-twin-2026";
 const BUSINESS_EMAIL = "business@hometwin.test";
 
 const db = new PrismaClient();
-const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
 const DAY = 86_400_000;
 const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z");
 const ago = (days: number) => new Date(today.getTime() - days * DAY);
@@ -51,18 +48,16 @@ function makePdf(lines: string[]) {
   return Buffer.from(out);
 }
 
-async function storeFile(propertyId: string, ext: string, data: Buffer) {
-  const key = `${propertyId}/${randomUUID()}${ext}`;
-  const full = path.join(UPLOAD_DIR, key);
-  await mkdir(path.dirname(full), { recursive: true });
-  await writeFile(full, data);
-  return key;
-}
+const MIME: Record<string, string> = { ".pdf": "application/pdf", ".txt": "text/plain", ".jpg": "image/jpeg" };
+
+// Local uploads folder, or the Vercel Blob store when BLOB_READ_WRITE_TOKEN is set.
+const storeFile = (propertyId: string, ext: string, data: Buffer) => saveFile(propertyId, `file${ext}`, data, MIME[ext]);
 
 async function addDocument(opts: {
   propertyId: string;
   assetId?: string;
   workOrderId?: string;
+  memberId?: string;
   filename: string;
   kind: string;
   lines: string[];
@@ -77,6 +72,7 @@ async function addDocument(opts: {
       propertyId: opts.propertyId,
       assetId: opts.assetId,
       workOrderId: opts.workOrderId,
+      memberId: opts.memberId,
       filename: opts.filename,
       mimeType: isPdf ? "application/pdf" : "text/plain",
       sizeBytes: data.length,
@@ -90,6 +86,11 @@ async function addDocument(opts: {
 }
 
 type In<T> = Omit<T, "propertyId">;
+
+const addMember = (propertyId: string, data: In<Prisma.MemberUncheckedCreateInput>) =>
+  db.member.create({ data: { ...data, propertyId } });
+
+const yearsAgo = (years: number) => ago(Math.round(years * 365.25));
 
 /** Attaches a product shot (and optionally a rating-label close-up) to an equipment item. */
 async function addPhotos(
@@ -137,7 +138,7 @@ async function main() {
       include: { properties: { include: { documents: { select: { storageKey: true } } } } },
     });
     if (!old) continue;
-    for (const p of old.properties) for (const d of p.documents) await unlink(path.join(UPLOAD_DIR, d.storageKey)).catch(() => {});
+    for (const p of old.properties) for (const d of p.documents) await deleteStoredFile(d.storageKey);
     await db.user.delete({ where: { id: old.id } });
   }
 
@@ -278,6 +279,31 @@ async function main() {
     lines: ["Rheem Stellar 315L - Owner's manual (summary)", "Flush the tank every 12 months to remove sediment.", "Check the pressure relief valve every 6 months.", "Anode inspection by a licensed plumber every 5 years."],
   });
 
+  const dad = await addMember(home.id, { name: "Nimal Perera", role: "self", birthDate: yearsAgo(44), phone: "555-0150", email: "nimal@example.com" });
+  const mum = await addMember(home.id, { name: "Shanika Perera", role: "spouse", birthDate: yearsAgo(41), phone: "555-0151", notes: "Blood group O+" });
+  const son = await addMember(home.id, { name: "Kavindu Perera", role: "child", birthDate: yearsAgo(15), notes: "Grade 10, Royal College. Allergic to penicillin." });
+  const grandma = await addMember(home.id, { name: "Kusuma Perera", role: "grandparent", birthDate: yearsAgo(72), notes: "Clinic every 3rd Monday" });
+  await addDocument({
+    propertyId: home.id, memberId: son.id, filename: "kavindu-birth-certificate.pdf", kind: "certificate", createdAt: ago(800),
+    lines: ["CERTIFICATE OF BIRTH (copy)", "Name: Kavindu Perera", `Date of birth: ${iso(yearsAgo(15))}`, "Registered: Colombo"],
+  });
+  await addDocument({
+    propertyId: home.id, memberId: son.id, filename: "kavindu-swimming-certificate.pdf", kind: "certificate", createdAt: ago(60),
+    lines: ["NATIONAL SWIMMING ASSOCIATION", "Certificate of achievement: Level 4", "Awarded to Kavindu Perera", `Date: ${iso(ago(60))}`],
+  });
+  await addDocument({
+    propertyId: home.id, memberId: dad.id, filename: "nimal-driving-licence-copy.pdf", kind: "certificate", createdAt: ago(500),
+    lines: ["DRIVING LICENCE (copy)", "Holder: Nimal Perera", "Classes: A1, B1, B", `Valid until: ${iso(ago(-1900))}`],
+  });
+  await addDocument({
+    propertyId: home.id, memberId: mum.id, filename: "shanika-degree-certificate.pdf", kind: "certificate", createdAt: ago(1200),
+    lines: ["UNIVERSITY OF COLOMBO", "Bachelor of Science (Hons)", "Awarded to Shanika Perera"],
+  });
+  await addDocument({
+    propertyId: home.id, memberId: grandma.id, filename: "kusuma-medical-record.txt", kind: "other", createdAt: ago(25),
+    lines: ["Clinic summary - Kusuma Perera", `Visit: ${iso(ago(25))}`, "Blood pressure medication: continue", "Next appointment in 4 weeks"],
+  });
+
   // ═══ 2. City apartment ════════════════════════════════════════════════════
   const apt = await db.property.create({
     data: { ownerId: user.id, name: "City apartment", type: "apartment", address: "Unit 804, 21 Harbour St", yearBuilt: 2018, notes: "Building manager: Sam (555-0101). Strata covers lifts, roof and common plumbing." },
@@ -352,6 +378,12 @@ async function main() {
     lines: ["Harbour St Strata - By-laws summary", "Owners maintain appliances, fixtures and internal plumbing.", "Strata maintains lifts, roof, facade, balcony membranes and common pipes.", "Report common-property issues to the building manager."],
   });
 
+  const tenant = await addMember(apt.id, { name: "Dilan Fernando", role: "tenant", phone: "555-0160", email: "dilan.f@example.com", notes: "Lease runs to next June" });
+  await addDocument({
+    propertyId: apt.id, memberId: tenant.id, filename: "dilan-lease-agreement.pdf", kind: "contract", createdAt: ago(140),
+    lines: ["RESIDENTIAL LEASE AGREEMENT", "Unit 804, 21 Harbour St", "Tenant: Dilan Fernando", `Start: ${iso(ago(140))}    Term: 12 months`],
+  });
+
   // ═══ 3. Head office ═══════════════════════════════════════════════════════
   const office = await db.property.create({
     data: { ownerId: user.id, name: "Head office", type: "commercial", address: "Level 3, 88 King St", yearBuilt: 2004, notes: "After-hours access via loading dock. Fire panel in plant room." },
@@ -405,6 +437,17 @@ async function main() {
   await addDocument({
     propertyId: office.id, assetId: ups.id, workOrderId: upsJob.id, filename: "ups-self-test-log.txt", kind: "other", createdAt: ago(3),
     lines: ["APC Smart-UPS 3000 - self-test log", `${iso(ago(3))} 02:00  Self-test FAILED: replace battery`, `${iso(ago(4))} 02:00  Runtime calibration aborted`],
+  });
+
+  const officeManager = await addMember(office.id, { name: "Ruwan Silva", role: "manager", phone: "555-0171", email: "ruwan@example.com" });
+  const warden = await addMember(office.id, { name: "Anjali Rao", role: "employee", phone: "555-0172", notes: "Floor fire warden, level 3" });
+  await addDocument({
+    propertyId: office.id, memberId: warden.id, filename: "anjali-fire-warden-certificate.pdf", kind: "certificate", createdAt: ago(240),
+    lines: ["FIRE WARDEN TRAINING - Certificate", "Participant: Anjali Rao", `Completed: ${iso(ago(240))}`, "Valid for 2 years"],
+  });
+  await addDocument({
+    propertyId: office.id, memberId: officeManager.id, filename: "ruwan-first-aid-certificate.pdf", kind: "certificate", createdAt: ago(410),
+    lines: ["FIRST AID AT WORK - Certificate", "Participant: Ruwan Silva", `Completed: ${iso(ago(410))}`, "Valid for 3 years"],
   });
 
   await seedBeachHouse(user.id, { coolAir: coolAir.id, rapid: rapid.id });
@@ -548,6 +591,17 @@ async function seedBusiness(ownerId: string) {
   await addDocument({
     propertyId: cafe.id, assetId: suppression.id, workOrderId: fireTest.id, filename: "fire-suppression-certificate.pdf", kind: "certificate", createdAt: ago(161),
     lines: ["GUARDFIRE SAFETY - Certificate of inspection", "System: Ansul R-102 wet chemical", `Date: ${iso(ago(161))}`, "Result: PASS", "Next inspection due within 6 months"],
+  });
+
+  const chef = await addMember(cafe.id, { name: "Tom Becker", role: "employee", phone: "555-0310", notes: "Head chef" });
+  const supervisor = await addMember(cafe.id, { name: "Mei Lin", role: "manager", phone: "555-0311", notes: "Food safety supervisor" });
+  await addDocument({
+    propertyId: cafe.id, memberId: supervisor.id, filename: "mei-food-safety-supervisor-certificate.pdf", kind: "certificate", createdAt: ago(320),
+    lines: ["FOOD SAFETY SUPERVISOR - Statement of attainment", "Name: Mei Lin", `Issued: ${iso(ago(320))}`, "Renew every 5 years"],
+  });
+  await addDocument({
+    propertyId: cafe.id, memberId: chef.id, filename: "tom-food-handler-certificate.pdf", kind: "certificate", createdAt: ago(90),
+    lines: ["FOOD HANDLER TRAINING - Certificate", "Name: Tom Becker", `Completed: ${iso(ago(90))}`],
   });
 
   // ── Warehouse ──

@@ -27,5 +27,21 @@ export const WORK_ORDER_STATUSES = ["open", "scheduled", "in_progress", "complet
 export const WORK_ORDER_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export const COST_CATEGORIES = ["purchase", "service", "repair", "replacement", "other"] as const;
 
+// How a member relates to the place: family roles for homes, work roles for businesses.
+export const MEMBER_ROLES = [
+  "self",
+  "spouse",
+  "child",
+  "parent",
+  "grandparent",
+  "sibling",
+  "relative",
+  "tenant",
+  "helper",
+  "manager",
+  "employee",
+  "contractor",
+] as const;
+
 /** Categories where only a qualified professional should do the work (proposal §6). */
 export const SAFETY_CRITICAL_CATEGORIES = new Set(["electrical", "structure", "hvac", "solar"]);

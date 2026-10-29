@@ -11,7 +11,7 @@ import { addDays, startOfDayUTC } from "@/lib/format";
 import { deleteStoredFile, saveFile } from "@/lib/storage";
 import { canExtract } from "@/lib/ai/extract";
 import { aiConfigured } from "@/lib/ai/client";
-import { resolveAssetId, resolveSpaceId } from "@/lib/form-entities";
+import { resolveAssetId, resolveMemberId, resolveSpaceId } from "@/lib/form-entities";
 import { getT } from "@/i18n/server";
 
 export type UploadState = { error?: string } | undefined;
@@ -28,13 +28,15 @@ export async function uploadDocument(_prev: UploadState, form: FormData): Promis
   if (!ACCEPTED_TYPES.includes(file.type)) return { error: t("documents.errType") };
 
   const assetId = await resolveAssetId(form, "assetId", propertyId);
+  const memberId = await resolveMemberId(form, "memberId", propertyId);
 
   const analyse = form.get("analyse") === "on" && canExtract(file.type) && aiConfigured();
-  const storageKey = await saveFile(propertyId, file.name, Buffer.from(await file.arrayBuffer()));
+  const storageKey = await saveFile(propertyId, file.name, Buffer.from(await file.arrayBuffer()), file.type);
   const doc = await db.document.create({
     data: {
       propertyId,
       assetId,
+      memberId,
       filename: file.name.slice(0, 200),
       mimeType: file.type,
       sizeBytes: file.size,
@@ -61,9 +63,10 @@ export async function linkDocument(form: FormData) {
   const doc = await findOwnedDocument(user.id, required(form, "documentId"));
   if (!doc) throw new Error("Document not found");
   const assetId = await resolveAssetId(form, "assetId", doc.propertyId);
+  const memberId = await resolveMemberId(form, "memberId", doc.propertyId);
   await db.document.update({
     where: { id: doc.id },
-    data: { assetId, kind: oneOf(form, "kind", DOCUMENT_KINDS, doc.kind as (typeof DOCUMENT_KINDS)[number]) },
+    data: { assetId, memberId, kind: oneOf(form, "kind", DOCUMENT_KINDS, doc.kind as (typeof DOCUMENT_KINDS)[number]) },
   });
   revalidatePath(`/properties/${doc.propertyId}`, "layout");
 }
@@ -80,6 +83,7 @@ export async function confirmExtraction(form: FormData) {
 
   const target = required(form, "target");
   const validSpace = await resolveSpaceId(form, "spaceId", propertyId);
+  const memberId = await resolveMemberId(form, "memberId", propertyId);
   const purchaseDate = date(form, "purchaseDate");
   const purchasePrice = float(form, "purchasePrice");
 
@@ -176,7 +180,7 @@ export async function confirmExtraction(form: FormData) {
       });
     }
 
-    await tx.document.update({ where: { id: doc.id }, data: { assetId, extractionStatus: "confirmed" } });
+    await tx.document.update({ where: { id: doc.id }, data: { assetId, memberId, extractionStatus: "confirmed" } });
     return assetId;
   });
 
