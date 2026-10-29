@@ -8,7 +8,7 @@ export const LOCALE_COOKIE = "lang";
 
 export const THEMES = ["light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
-export const DEFAULT_THEME: Theme = "light";
+export const DEFAULT_THEME: Theme = "dark";
 export const THEME_COOKIE = "theme";
 
 /** BCP 47 tags for dates and numbers. */
