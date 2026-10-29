@@ -29,7 +29,7 @@ Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. 
 ## Stack
 
 - Next.js 16 (App Router, Server Actions) with TypeScript and Tailwind CSS v4.
-- Prisma 6 with PostgreSQL (Neon on Vercel; `npx prisma dev` or any Postgres locally).
+- Prisma 6 with PostgreSQL (Prisma Postgres on Vercel; `npx prisma dev` or any Postgres locally).
 - Uploaded files go to a private Vercel Blob store when `BLOB_READ_WRITE_TOKEN` is set, otherwise to the local `UPLOAD_DIR` folder (`src/lib/file-store.ts`). Either way they are served only to their owner through `/api/documents/[id]`.
 - Optional AI document reading through a hosted AI API (see below).
 
@@ -39,7 +39,7 @@ Out of scope for now: 3D, IoT sensors, the technician marketplace and payments. 
 npm install
 cp .env.example .env    # then set SESSION_SECRET
 npx prisma dev          # local Postgres; keep it running and copy the postgres:// URL it prints
-                        # into DATABASE_URL and DATABASE_URL_UNPOOLED (add pgbouncer=true& after the ?)
+                        # into DATABASE_URL (add pgbouncer=true& after the ?)
 npx prisma migrate dev
 npm run db:seed         # optional demo data: a homeowner account (house, apartment, beach house, office)
                         # and a business account (café + warehouse); logins are in prisma/seed.ts
@@ -66,12 +66,12 @@ A Google account is linked to an existing account with the same email only when 
 
 Vercel can't keep files between requests, so the database and uploads live in hosted services:
 
-1. **Database:** in the Vercel project, open **Storage → Create Database → Neon** (free tier) and connect it to the project. This adds `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+1. **Database:** in the Vercel project, open **Storage → Create Database → Prisma Postgres** (free tier) and connect it to the project. This adds `DATABASE_URL`. (With Neon instead, set `DATABASE_URL` to its unpooled connection string.)
 2. **Uploads:** **Storage → Create → Blob**, choose **Private** access, and connect it to the project. This adds `BLOB_READ_WRITE_TOKEN`.
 3. **Settings → Environment Variables:** add `SESSION_SECRET` (32+ random characters, see `.env.example`). For Google sign-in also add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `APP_URL` (your site's address), and add `<APP_URL>/api/auth/google/callback` as a redirect URI in Google Cloud.
 4. **Redeploy.** The build runs `prisma migrate deploy` first, so the tables are created automatically.
 
-Optional demo data on the live site: put the production `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `BLOB_READ_WRITE_TOKEN` in a local `.env` and run `npm run db:seed`. The demo logins are public in `prisma/seed.ts`, so change them first or skip this for a public site.
+Optional demo data on the live site: put the production `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN` in a local `.env` and run `npm run db:seed`. The demo logins are public in `prisma/seed.ts`, so change them first or skip this for a public site.
 
 ## Layout
 

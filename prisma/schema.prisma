@@ -1,5 +1,5 @@
 // DigiMemo — core data model (proposal §14).
-// PostgreSQL everywhere (Neon on Vercel, any Postgres locally).
+// PostgreSQL everywhere (Prisma Postgres or Neon on Vercel, `prisma dev` locally).
 // Enum-like fields are strings; allowed values live in src/lib/constants.ts.
 
 generator client {
@@ -7,9 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL") // pooled connection, used by the app
-  directUrl = env("DATABASE_URL_UNPOOLED") // direct connection, used by migrations
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // a direct postgres:// connection (used by the app and migrations)
 }
 
 model User {
